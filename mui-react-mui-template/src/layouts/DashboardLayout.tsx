@@ -1,157 +1,99 @@
-import * as React from 'react'
-import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom'
+import React from "react";
+import { Outlet, Link as RouterLink } from "react-router-dom";
 import {
-  AppBar, Toolbar, IconButton, Typography, Drawer, List, ListItemButton, ListItemIcon, ListItemText,
-  Box, Divider, Tooltip, Menu, MenuItem, Avatar
-} from '@mui/material'
-import MenuIcon from '@mui/icons-material/Menu'
-import DashboardIcon from '@mui/icons-material/Dashboard'
-import PeopleIcon from '@mui/icons-material/People'
-import Brightness4Icon from '@mui/icons-material/Brightness4'
-import Brightness7Icon from '@mui/icons-material/Brightness7'
-import GitHubIcon from '@mui/icons-material/GitHub'
-import { ColorModeContext } from '../theme'
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  IconButton,
+  Link as MUILink,
+  useTheme,
+} from "@mui/material";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
 
-const drawerWidth = 260
-
-const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
-  const location = useLocation()
-  const selected = location.pathname === to
-  return (
-    <ListItemButton component={Link} to={to} selected={selected} sx={{ borderRadius: 2, mx: 1, my: 0.5 }}>
-      <ListItemIcon>{icon}</ListItemIcon>
-      <ListItemText primary={label} />
-    </ListItemButton>
-  )
+interface DashboardLayoutProps {
+  children?: React.ReactNode;
+  onToggleTheme?: () => void;
+  mode?: "light" | "dark";
 }
 
-export default function DashboardLayout() {
-  const [mobileOpen, setMobileOpen] = React.useState(false)
-  const colorMode = React.useContext(ColorModeContext)
-  const navigate = useNavigate()
-
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
-  const openMenu = Boolean(anchorEl)
-
-  const toggleDrawer = () => setMobileOpen(!mobileOpen)
-
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const handleClose = () => {
-    setAnchorEl(null)
-  }
-
-  const handleProfile = () => {
-    handleClose()
-    navigate("/profile") // 🔹 asegúrate de tener esta ruta
-  }
-
-  const handleLogout = () => {
-    handleClose()
-    console.log("Cerrando sesión...")
-    // localStorage.removeItem("token")
-    navigate("/login")
-  }
-
-  const drawer = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" fontWeight={700}>React + MUI Starter</Typography>
-        <Typography variant="body2" color="text.secondary">Plantilla lista para CRUD</Typography>
-      </Box>
-      <Divider />
-      <List sx={{ px: 1, pt: 1 }}>
-        <NavItem to="/dashboard" icon={<DashboardIcon />} label="Dashboard" />
-        <NavItem to="/users" icon={<PeopleIcon />} label="Usuarios" />
-      </List>
-      <Box sx={{ flexGrow: 1 }} />
-      <Divider />
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Tooltip title="Repositorio base">
-          <IconButton component="a" href="https://github.com/" target="_blank" rel="noreferrer">
-            <GitHubIcon />
-          </IconButton>
-        </Tooltip>
-        <Box sx={{ flexGrow: 1 }} />
-        <Tooltip title="Cambiar tema claro/oscuro">
-          <IconButton onClick={colorMode.toggleColorMode} aria-label="toggle theme">
-            <Brightness7Icon sx={{ display: { xs: 'none' } }} />
-            <Brightness4Icon />
-          </IconButton>
-        </Tooltip>
-      </Box>
-    </Box>
-  )
+export default function DashboardLayout({
+  children,
+  onToggleTheme,
+  mode = "light",
+}: DashboardLayoutProps) {
+  const theme = useTheme();
+  const isLight = mode !== "dark";
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <AppBar position="fixed" sx={{ zIndex: theme => theme.zIndex.drawer + 1 }}>
+    <Box sx={{ display: "flex" }}>
+      <AppBar
+        position="fixed"
+        sx={{
+          zIndex: (t) => t.zIndex.drawer + 1,
+          backgroundColor: isLight ? theme.palette.background.paper : theme.palette.grey[900],
+          color: isLight ? theme.palette.text.primary : theme.palette.grey[100],
+          boxShadow: "none",
+          borderBottom: `1px solid ${isLight ? "#e0e0e0" : theme.palette.grey[800]}`,
+        }}
+      >
         <Toolbar>
-          <IconButton color="inherit" edge="start" onClick={toggleDrawer} sx={{ mr: 2, display: { md: 'none' } }}>
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Panel
+          {/* Logo */}
+          <Typography variant="h6" noWrap sx={{ flexGrow: 1, fontWeight: "bold", fontSize: "1.2rem" }}>
+            Logo
           </Typography>
 
-          {/* Botón de usuario */}
-          <IconButton onClick={handleMenu} color="inherit">
-            <Avatar sx={{ bgcolor: 'secondary.main' }}>U</Avatar>
-          </IconButton>
+          {/* Enlaces centro */}
+          <Box sx={{ display: "flex", gap: 3, mx: 4 }}>
+            <MUILink component={RouterLink} to="#" underline="none" color="inherit" sx={{ "&:hover": { color: "primary.main" } }}>
+              Política de privacidad
+            </MUILink>
+            <MUILink component={RouterLink} to="#" underline="none" color="inherit" sx={{ "&:hover": { color: "primary.main" } }}>
+              Términos y condiciones
+            </MUILink>
+            <MUILink component={RouterLink} to="#" underline="none" color="inherit" sx={{ "&:hover": { color: "primary.main" } }}>
+              Contáctanos
+            </MUILink>
+          </Box>
 
-          {/* Menú desplegable */}
-          <Menu
-            anchorEl={anchorEl}
-            open={openMenu}
-            onClose={handleClose}
+          {/* Switch tema (usa htmlColor para que NUNCA falle) */}
+          {onToggleTheme && (
+            <IconButton
+              onClick={onToggleTheme}
+              color="inherit"
+              sx={{
+                mr: 2,
+                borderRadius: "999px",
+                backgroundColor: isLight ? theme.palette.grey[200] : theme.palette.grey[700],
+                "&:hover": { backgroundColor: isLight ? theme.palette.grey[300] : theme.palette.grey[600] },
+              }}
+            >
+              {isLight ? (
+                <DarkModeIcon htmlColor="#000" />
+              ) : (
+                <LightModeIcon htmlColor="#fff" />
+              )}
+            </IconButton>
+          )}
+
+          {/* Panel de control */}
+          <Typography
+            variant="body2"
+            component={RouterLink}
+            to="/panel/dashboard"
+            sx={{ fontWeight: "bold", textDecoration: "none", color: "primary.main", "&:hover": { opacity: 0.8 } }}
           >
-            <MenuItem onClick={handleProfile}>Ver perfil</MenuItem>
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
-          </Menu>
+            PANEL DE CONTROL
+          </Typography>
         </Toolbar>
       </AppBar>
 
-      {/* Mobile drawer */}
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={toggleDrawer}
-        ModalProps={{ keepMounted: true }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }
-        }}
-      >
-        {drawer}
-      </Drawer>
-
-      {/* Desktop drawer */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }
-        }}
-        open
-      >
-        {drawer}
-      </Drawer>
-
-      {/* Contenido principal */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` }
-        }}
-      >
+      {/* Contenido */}
+      <Box component="main" sx={{ flexGrow: 1, p: 3, width: "100%" }}>
         <Toolbar />
-        <Outlet />
+        {children || <Outlet />}
       </Box>
     </Box>
-  )
+  );
 }
