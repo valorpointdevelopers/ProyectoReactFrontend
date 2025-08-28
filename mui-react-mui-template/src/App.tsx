@@ -1,20 +1,25 @@
-import * as React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import DashboardLayout from "./layouts/DashboardLayout";
-import Dashboard from "./pages/Dashboard";
-import Users from "./pages/Users";
-import SignupForm from "./components/SignupForm"; // 👈 importar aquí
+import * as React from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import DashboardLayout from './layouts/DashboardLayout'
+import MainLayout from './layouts/MainLayout'
+import AuthLayout from './layouts/AuthLayout'
+import Dashboard from './pages/Dashboard'
+import Users from './pages/Users'
+import RecuperarContraseña from './layouts/RecuperarContraseña'
 
 export default function App() {
   return (
     <Routes>
-          <Route path="/signup" element={<SignupForm />} />
-      <Route element={<DashboardLayout />}>
-        <Route path="/" element={<Navigate to="/dashboard" />} />
+      {/* Rutas con el layout principal */}
+      <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/users" element={<Users />} />
-     
+      </Route>
+
+      {/* Rutas de autenticación */}
+      <Route element={<AuthLayout />}>
+        <Route path="/recuperar-contraseña" element={<RecuperarContraseña />} />
       </Route>
     </Routes>
-  );
+  )
 }
