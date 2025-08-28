@@ -18,6 +18,7 @@ export default function App() {
 
       {/* Rutas de autenticación */}
       <Route element={<AuthLayout />}>
+        <Route path="/" element={<RecuperarContraseña />} />
         <Route path="/recuperar-contraseña" element={<RecuperarContraseña />} />
       </Route>
     </Routes>
