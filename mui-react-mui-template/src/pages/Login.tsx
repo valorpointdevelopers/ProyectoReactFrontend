@@ -16,7 +16,7 @@ import {
   Divider,
 } from "@mui/material";
 import { Visibility, VisibilityOff, Login as LoginIcon } from "@mui/icons-material";
-import { Link as RouterLink } from "react-router-dom"; // <- Import necesario para React Router
+import { Link as RouterLink } from "react-router-dom";
 
 type LoginForm = {
   email: string;
@@ -36,30 +36,23 @@ export default function Login() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({});
   const [submitting, setSubmitting] = React.useState(false);
-  const [alert, setAlert] = React.useState<{ type: "success" | "error"; msg: string } | null>(
-    null
-  );
+  const [alert, setAlert] = React.useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  // Nuevo estado: solo validar después de intentar enviar
+  const [submitted, setSubmitted] = React.useState(false);
 
   const onChange = (field: keyof LoginForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = field === "remember" ? e.target.checked : e.target.value;
     setValues((v) => ({ ...v, [field]: value }));
   };
 
-  const validate = (dirtyAll = false) => {
+  const validate = () => {
     const next: { email?: string; password?: string } = {};
-    if (dirtyAll || values.email) {
-      if (!values.email) next.email = "Ingresa tu correo";
-      else if (!validateEmail(values.email)) next.email = "Correo inválido";
-    } else {
-      next.email = "Ingresa tu correo";
-    }
+    if (!values.email) next.email = "Ingresa tu correo";
+    else if (!validateEmail(values.email)) next.email = "Correo inválido";
 
-    if (dirtyAll || values.password) {
-      if (!values.password) next.password = "Ingresa tu contraseña";
-      else if (values.password.length < 6) next.password = "Mínimo 6 caracteres";
-    } else {
-      next.password = "Ingresa tu contraseña";
-    }
+    if (!values.password) next.password = "Ingresa tu contraseña";
+    else if (values.password.length < 6) next.password = "Mínimo 6 caracteres";
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -68,7 +61,9 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAlert(null);
-    if (!validate(true)) return;
+    setSubmitted(true); // <- Marca que ya intentó enviar
+
+    if (!validate()) return;
 
     setSubmitting(true);
     try {
@@ -94,7 +89,7 @@ export default function Login() {
       spacing={2}
       flexDirection={{ xs: "column", md: "row" }}
     >
-      {/* Imagen al costado */}
+      {/* Imagen */}
       <Grid item>
         <Box
           component="img"
@@ -110,7 +105,7 @@ export default function Login() {
         />
       </Grid>
 
-      {/* Login */}
+      {/* Formulario */}
       <Grid item>
         <Paper
           elevation={8}
@@ -138,9 +133,8 @@ export default function Login() {
               type="email"
               value={values.email}
               onChange={onChange("email")}
-              onBlur={() => validate()}
-              error={Boolean(errors.email)}
-              helperText={errors.email || ""}
+              error={submitted && Boolean(errors.email)}
+              helperText={submitted ? errors.email : ""}
               margin="normal"
               fullWidth
               autoComplete="email"
@@ -152,9 +146,8 @@ export default function Login() {
               type={showPassword ? "text" : "password"}
               value={values.password}
               onChange={onChange("password")}
-              onBlur={() => validate()}
-              error={Boolean(errors.password)}
-              helperText={errors.password || ""}
+              error={submitted && Boolean(errors.password)}
+              helperText={submitted ? errors.password : ""}
               margin="normal"
               fullWidth
               autoComplete="current-password"
@@ -180,14 +173,8 @@ export default function Login() {
                 }
                 label="Recordarme"
               />
-              
-              {/* Enlace de recuperación de contraseña */}
-              <Link
-                component={RouterLink}
-                to="/recuperar-contraseña"
-                variant="body2"
-                underline="hover"
-              >
+
+              <Link component={RouterLink} to="/recuperar-contraseña" variant="body2" underline="hover">
                 ¿Olvidaste tu contraseña?
               </Link>
             </Box>
@@ -208,7 +195,7 @@ export default function Login() {
 
             <Typography variant="body2" textAlign="center" color="text.secondary">
               ¿No tienes cuenta?{" "}
-             <Link component={RouterLink} to="/register" underline="hover">
+              <Link component={RouterLink} to="/register" underline="hover">
                 Regístrate
               </Link>
             </Typography>

@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { Link as RouterLink } from "react-router-dom";
-
 import {
   Box,
   Button,
@@ -11,10 +9,10 @@ import {
   InputAdornment,
   IconButton,
   FormHelperText,
-  Link,
 } from '@mui/material';
 import { FiUser, FiMail, FiLock, FiPhone, FiKey, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useTheme } from '@mui/material/styles';
+import { Link as RouterLink } from 'react-router-dom';
 
 interface FormData {
   name: string;
@@ -114,8 +112,6 @@ const SignupForm: React.FC = () => {
             backgroundColor: 'transparent',
           }}
         >
-         
-
           {/* Título y subtítulo */}
           <Typography
             variant="h5"
@@ -130,7 +126,7 @@ const SignupForm: React.FC = () => {
             Comienza con una cuenta de demostración en WaCRM
           </Typography>
 
-           {/* Texto arriba del formulario */}
+          {/* Texto arriba del formulario */}
           <Typography
             align="center"
             sx={{ mb: 3, color: theme.palette.text.secondary, fontSize: 14 }}
@@ -283,9 +279,9 @@ const SignupForm: React.FC = () => {
               sx={{ mt: 2, fontSize: 14, color: theme.palette.text.secondary }}
             >
               ¿Ya tienes una cuenta?{' '}
-   <Link component={RouterLink} to="/login" underline="hover" sx={{ fontWeight: 'bold' }}>
+              <RouterLink to="/login" style={{ textDecoration: 'underline', fontWeight: 'bold' }}>
                 Iniciar sesión
-              </Link>
+              </RouterLink>
             </Typography>
           </form>
         </Paper>
