@@ -7,6 +7,7 @@ import LandingLayout from "./layouts/LandingLayout";
 import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import SignupForm from "./pages/SignupForm";
+import Phonebook from "./pages/Phonebook";
 import RecuperarContrasena from "./pages/RecuperarContrasena"; 
 import Login from "./pages/Login";
 import WelcomeCard from "./components/WelcomeCard";
@@ -57,12 +58,14 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
+        
 
         {/* Panel administrativo con layout */}
         <Route
           path="/panel/*"
           element={<DashboardLayout onToggleTheme={toggleMode} mode={mode} />}
         >
+          <Route path="contacts" element={<Phonebook />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
         </Route>
