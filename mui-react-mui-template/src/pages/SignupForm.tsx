@@ -221,6 +221,7 @@ const SignupForm: React.FC = () => {
               size="small"
               placeholder="Tu número de móvil"
               name="mobile"
+              type="tel"
               value={formData.mobile}
               onChange={handleChange}
               margin="dense"
@@ -233,6 +234,11 @@ const SignupForm: React.FC = () => {
                   </InputAdornment>
                 ),
               }}
+              inputProps={{
+                pattern: "^[+0-9]+$", // SOLO permite números y "+"
+                title: "Solo se permiten números y el símbolo +",
+              }}
+              required
             />
 
             {/* Checkbox y helper text */}

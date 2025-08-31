@@ -1,13 +1,16 @@
-body {
+html, body, #root {
+  height: 100%;        /* ocupa toda la ventana */
+  width: 100%;         /* evita overflow horizontal */
   margin: 0;
+  padding: 0;
+  overflow: hidden;    /* elimina scrolls */
+}
+
+body {
   font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
   background-color: #f5f5f5;
 }
 
 * {
   box-sizing: border-box;
-}
-
-#root {
-  min-height: 100vh;
 }

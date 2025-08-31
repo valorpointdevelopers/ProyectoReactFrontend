@@ -11,6 +11,7 @@ import RecuperarContraseña from "./pages/RecuperarContraseña";
 import Login from "./pages/Login";
 import WelcomeCard from "./components/WelcomeCard";
 import baseTheme from "./theme";
+import BandejaEntrada from "./components/BandejaEntrada";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -57,6 +58,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
         <Route path="/recuperar-contraseña" element={<RecuperarContraseña />} />
+
+        {/* Panel de Control */}
+        <Route path="/bandeja-entrada" element={<BandejaEntrada />} />
+
 
         {/* Panel administrativo con layout */}
         <Route
