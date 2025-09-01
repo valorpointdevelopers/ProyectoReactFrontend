@@ -1,63 +1,88 @@
-import React from "react";
-import { Outlet, Link as RouterLink } from "react-router-dom";
+import React, { useState } from "react"
+import { Outlet, Link, useLocation } from "react-router-dom"
 import {
-  AppBar,
+  Drawer,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
   Toolbar,
+  AppBar,
+  IconButton,
   Typography,
   Box,
-  IconButton,
-  Link as MUILink,
   useTheme,
-} from "@mui/material";
-import LightModeIcon from "@mui/icons-material/LightMode";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
+} from "@mui/material"
+import MenuIcon from "@mui/icons-material/Menu"
+import DashboardIcon from "@mui/icons-material/Dashboard"
+import ChatIcon from "@mui/icons-material/Chat"
+import ContactsIcon from "@mui/icons-material/Contacts"
+import BuildIcon from "@mui/icons-material/Build"
+import CampaignIcon from "@mui/icons-material/Campaign"
+import ApiIcon from "@mui/icons-material/Api"
+import GitHubIcon from "@mui/icons-material/GitHub"
+import LightModeIcon from "@mui/icons-material/LightMode"
+import DarkModeIcon from "@mui/icons-material/DarkMode"
+import AccountCircleIcon from "@mui/icons-material/AccountCircle"
 
 interface DashboardLayoutProps {
-  children?: React.ReactNode;
-  onToggleTheme?: () => void;
-  mode?: "light" | "dark";
+  onToggleTheme?: () => void
+  mode?: "light" | "dark"
 }
 
-export default function DashboardLayout({
-  children,
+type NavItemProps = {
+  to: string
+  icon: React.ReactNode
+  label: string
+}
+
+const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => {
+  const location = useLocation()
+  const selected = location.pathname === to
+  return (
+    <ListItemButton
+      component={Link}
+      to={to}
+      selected={selected}
+      sx={{ borderRadius: 2, mx: 1, my: 0.5 }}
+    >
+      <ListItemIcon>{icon}</ListItemIcon>
+      <ListItemText primary={label} />
+    </ListItemButton>
+  )
+}
+
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onToggleTheme,
   mode = "light",
-}: DashboardLayoutProps) {
-  const theme = useTheme();
-  const isLight = mode !== "dark";
+}) => {
+  const [open, setOpen] = useState(false)
+  const theme = useTheme()
+  const isLight = mode === "light"
+
+  const toggleDrawer = () => setOpen(!open)
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          zIndex: (t) => t.zIndex.drawer + 1,
-          backgroundColor: isLight ? theme.palette.background.paper : theme.palette.grey[900],
-          color: isLight ? theme.palette.text.primary : theme.palette.grey[100],
-          boxShadow: "none",
-          borderBottom: `1px solid ${isLight ? "#e0e0e0" : theme.palette.grey[800]}`,
-        }}
-      >
+      {/* Barra superior */}
+      <AppBar position="fixed" sx={{ zIndex: 1201 }}>
         <Toolbar>
-          {/* Logo */}
-          <Typography variant="h6" noWrap sx={{ flexGrow: 1, fontWeight: "bold", fontSize: "1.2rem" }}>
-            Logo
+          {/* Botón hamburguesa */}
+          <IconButton
+            color="inherit"
+            edge="start"
+            onClick={toggleDrawer}
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+
+          {/* Logo / título */}
+          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
+            Whatsvaa
           </Typography>
 
-          {/* Enlaces centro */}
-          <Box sx={{ display: "flex", gap: 3, mx: 4 }}>
-            <MUILink component={RouterLink} to="#" underline="none" color="inherit" sx={{ "&:hover": { color: "primary.main" } }}>
-              Política de privacidad
-            </MUILink>
-            <MUILink component={RouterLink} to="#" underline="none" color="inherit" sx={{ "&:hover": { color: "primary.main" } }}>
-              Términos y condiciones
-            </MUILink>
-            <MUILink component={RouterLink} to="#" underline="none" color="inherit" sx={{ "&:hover": { color: "primary.main" } }}>
-              Contáctanos
-            </MUILink>
-          </Box>
-
-          {/* Switch tema (usa htmlColor para que NUNCA falle) */}
+          {/* Botón cambio de tema */}
           {onToggleTheme && (
             <IconButton
               onClick={onToggleTheme}
@@ -65,8 +90,14 @@ export default function DashboardLayout({
               sx={{
                 mr: 2,
                 borderRadius: "999px",
-                backgroundColor: isLight ? theme.palette.grey[200] : theme.palette.grey[700],
-                "&:hover": { backgroundColor: isLight ? theme.palette.grey[300] : theme.palette.grey[600] },
+                backgroundColor: isLight
+                  ? theme.palette.grey[200]
+                  : theme.palette.grey[700],
+                "&:hover": {
+                  backgroundColor: isLight
+                    ? theme.palette.grey[300]
+                    : theme.palette.grey[600],
+                },
               }}
             >
               {isLight ? (
@@ -77,23 +108,75 @@ export default function DashboardLayout({
             </IconButton>
           )}
 
-          {/* Panel de control */}
-          <Typography
-            variant="body2"
-            component={RouterLink}
-            to="/panel/dashboard"
-            sx={{ fontWeight: "bold", textDecoration: "none", color: "primary.main", "&:hover": { opacity: 0.8 } }}
+          {/* Enlace a GitHub */}
+          <IconButton
+            color="inherit"
+            component="a"
+            href="https://github.com/tu-repo"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            PANEL DE CONTROL
-          </Typography>
+            <GitHubIcon />
+          </IconButton>
+
+          {/* Perfil */}
+          <IconButton color="inherit" component={Link} to="/perfil">
+            <AccountCircleIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
 
-      {/* Contenido */}
-      <Box component="main" sx={{ flexGrow: 1, p: 3, width: "100%" }}>
+      {/* Drawer lateral */}
+      <Drawer
+        variant="temporary"
+        open={open}
+        onClose={toggleDrawer}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          [`& .MuiDrawer-paper`]: {
+            width: 250,
+            boxSizing: "border-box",
+          },
+        }}
+      >
         <Toolbar />
-        {children || <Outlet />}
+        <List>
+          <NavItem
+            to="/panel/dashboard"
+            icon={<DashboardIcon />}
+            label="Panel de control"
+          />
+          <NavItem
+            to="/panel/bandeja-entrada"
+            icon={<ChatIcon />}
+            label="Bandeja de entrada"
+          />
+          <NavItem
+            to="/panel/phonebook"
+            icon={<ContactsIcon />}
+            label="Agenda telefónica"
+          />
+          <NavItem
+            to="/panel/flows"
+            icon={<BuildIcon />}
+            label="Constructor de flujos"
+          />
+          <NavItem
+            to="/panel/campaigns"
+            icon={<CampaignIcon />}
+            label="Campañas & Chatbots"
+          />
+          <NavItem to="/panel/api" icon={<ApiIcon />} label="Acceso API" />
+        </List>
+      </Drawer>
+
+      {/* Contenido */}
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <Toolbar />
+        <Outlet />
       </Box>
     </Box>
-  );
+  )
 }
+
+export default DashboardLayout

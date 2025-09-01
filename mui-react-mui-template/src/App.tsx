@@ -7,11 +7,12 @@ import LandingLayout from "./layouts/LandingLayout";
 import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import SignupForm from "./pages/SignupForm";
-import RecuperarContraseña from "./pages/RecuperarContraseña"; 
+import RecuperarContraseña from "./pages/RecuperarContraseña";
 import Login from "./pages/Login";
 import WelcomeCard from "./components/WelcomeCard";
 import baseTheme from "./theme";
 import BandejaEntrada from "./components/BandejaEntrada";
+import Phonebook from "./components/Phonebook";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -59,10 +60,6 @@ function App() {
         <Route path="/register" element={<SignupForm />} />
         <Route path="/recuperar-contraseña" element={<RecuperarContraseña />} />
 
-        {/* Panel de Control */}
-        <Route path="/bandeja-entrada" element={<BandejaEntrada />} />
-
-
         {/* Panel administrativo con layout */}
         <Route
           path="/panel/*"
@@ -70,6 +67,8 @@ function App() {
         >
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
+          <Route path="bandeja-entrada" element={<BandejaEntrada />} />
+          <Route path="phonebook" element={<Phonebook />} />
         </Route>
       </Routes>
     </ThemeProvider>
