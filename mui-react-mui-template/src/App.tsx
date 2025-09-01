@@ -12,6 +12,9 @@ import RecuperarContrasena from "./pages/RecuperarContrasena";
 import Login from "./pages/Login";
 import WelcomeCard from "./components/WelcomeCard";
 import baseTheme from "./theme";
+import BandejadeEntrada from "./pages/BandejadeEntrada";
+import CalentadorWhatsapp from "./pages/CalentadorWhatsapp";
+import PanelControl from "./pages/PanelControl";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -65,7 +68,10 @@ function App() {
           path="/panel/*"
           element={<DashboardLayout onToggleTheme={toggleMode} mode={mode} />}
         >
+          <Route path="inbox" element={<BandejadeEntrada />} />
+          <Route path="calentador" element={<CalentadorWhatsapp />} />
           <Route path="contacts" element={<Phonebook />} />
+          <Route path="panel" element={<PanelControl />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
         </Route>
