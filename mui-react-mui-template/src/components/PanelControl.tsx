@@ -136,7 +136,7 @@ const PanelControl: React.FC = () => {
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>0</Typography>
               </Paper>
               <Paper variant="outlined" sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: theme.palette.divider }}>
-                <Typography>Flujos de Chatbot</Typography>
+                <Typography>Total de flujos de chatbot</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>0</Typography>
               </Paper>
               <Paper variant="outlined" sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: theme.palette.divider }}>
