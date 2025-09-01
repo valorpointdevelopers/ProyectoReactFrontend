@@ -10,9 +10,9 @@ import SignupForm from "./pages/SignupForm";
 import RecuperarContraseña from "./pages/RecuperarContraseña"; 
 import Login from "./pages/Login";
 import WelcomeCard from "./components/WelcomeCard";
-import Calentador from "./components/CalentadorWhatsapp";
 import baseTheme from "./theme";
-import CalentadorWhatsapp from "./components/CalentadorWhatsapp";
+import PanelControl from "./components/PanelControl";
+
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -59,6 +59,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
         <Route path="/recuperar-contraseña" element={<RecuperarContraseña />} />
+  
 
         {/* Panel administrativo con layout */}
         <Route
@@ -67,7 +68,7 @@ function App() {
         >
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
-          <Route path="calentador" element={<CalentadorWhatsapp />} />
+          <Route path="paneldecontrol" element={<PanelControl />} />
         </Route>
       </Routes>
     </ThemeProvider>
