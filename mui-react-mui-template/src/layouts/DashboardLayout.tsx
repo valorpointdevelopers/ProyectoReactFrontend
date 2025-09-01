@@ -142,14 +142,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <Toolbar />
         <List>
           <NavItem
-            to="/panel/dashboard"
+            to="/panel/panelcontrol"
             icon={<DashboardIcon />}
             label="Panel de control"
           />
           <NavItem
-            to="/panel/bandeja-entrada"
+            to="bandeja-entrada"
             icon={<ChatIcon />}
             label="Bandeja de entrada"
+          />
+          <NavItem
+            to="/panel/CalentadorWhatsapp"
+            icon={<ChatIcon />}
+            label="Calentador de WhatsApp"
           />
           <NavItem
             to="/panel/phonebook"

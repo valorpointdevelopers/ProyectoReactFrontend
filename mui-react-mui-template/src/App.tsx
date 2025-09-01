@@ -13,6 +13,8 @@ import WelcomeCard from "./components/WelcomeCard";
 import baseTheme from "./theme";
 import BandejaEntrada from "./components/BandejaEntrada";
 import Phonebook from "./components/Phonebook";
+import CalentadorWhatsapp from "./components/CalentadorWhatsapp";
+import PanelControl from"./components/PanelControl";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -69,6 +71,8 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="bandeja-entrada" element={<BandejaEntrada />} />
           <Route path="phonebook" element={<Phonebook />} />
+          <Route path="CalentadorWhatsapp" element={<CalentadorWhatsapp />} />
+          <Route path="panelcontrol" element={<PanelControl />} />
         </Route>
       </Routes>
     </ThemeProvider>
