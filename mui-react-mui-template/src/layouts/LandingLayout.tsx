@@ -77,7 +77,7 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
           {/* Botón a Panel */}
           <Button
             component={RouterLink}
-            to="/panel/dashboard"
+            to="/panel/panel"
             variant="contained"
             startIcon={<RedeemIcon />}
             sx={{ borderRadius: 999, px: 2.5 }}
