@@ -16,7 +16,7 @@ import {
   Divider,
 } from "@mui/material";
 import { Visibility, VisibilityOff, Login as LoginIcon } from "@mui/icons-material";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom"; // Importamos useNavigate aquí
 
 type LoginForm = {
   email: string;
@@ -28,6 +28,8 @@ const validateEmail = (value: string) =>
   /^(?:[a-zA-Z0-9_'^&\/+{}!#$%*?|~.-]+)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(value);
 
 export default function Login() {
+  const navigate = useNavigate(); // Inicializamos el hook aquí
+
   const [values, setValues] = React.useState<LoginForm>({
     email: "",
     password: "",
@@ -38,7 +40,6 @@ export default function Login() {
   const [submitting, setSubmitting] = React.useState(false);
   const [alert, setAlert] = React.useState<{ type: "success" | "error"; msg: string } | null>(null);
 
-  // Nuevo estado: solo validar después de intentar enviar
   const [submitted, setSubmitted] = React.useState(false);
 
   const onChange = (field: keyof LoginForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,14 +62,18 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAlert(null);
-    setSubmitted(true); // <- Marca que ya intentó enviar
+    setSubmitted(true);
 
     if (!validate()) return;
 
     setSubmitting(true);
     try {
+      // Simula una autenticación exitosa
       await new Promise((res) => setTimeout(res, 1000));
       setAlert({ type: "success", msg: "¡Bienvenido! Autenticación exitosa." });
+
+      // Redirige al usuario después de un inicio de sesión exitoso
+      navigate("/panel/calentador");
     } catch (err) {
       setAlert({ type: "error", msg: "Ocurrió un error. Inténtalo de nuevo." });
     } finally {
