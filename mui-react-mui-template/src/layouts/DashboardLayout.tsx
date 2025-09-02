@@ -171,7 +171,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             icon={<CampaignIcon />}
             label="Campañas & Chatbots"
           />
-          <NavItem to="/panel/api" icon={<ApiIcon />} label="Acceso API" />
+          <NavItem 
+          to="/panel/api" 
+          icon={<ApiIcon />} 
+          label="Acceso API" />
         </List>
       </Drawer>
 
