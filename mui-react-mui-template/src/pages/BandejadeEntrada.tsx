@@ -13,7 +13,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import EventIcon from "@mui/icons-material/Event";
-import welcomeCats from "../images/wcrmlogo.png";
+import welcomeCats from "../images/no-chat-found.svg";
 
 const BandejaEntrada: React.FC = () => {
   const theme = useTheme();

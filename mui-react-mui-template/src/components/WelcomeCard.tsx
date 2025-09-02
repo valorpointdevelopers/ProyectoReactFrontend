@@ -1,11 +1,10 @@
-import { Box, Button, Typography, Grid, Paper } from "@mui/material";
+import { Box, Button, Typography, Grid } from "@mui/material";
 import WifiRoundedIcon from "@mui/icons-material/WifiRounded";
 import { useNavigate } from "react-router-dom";
-
-
+import heroBanner from "../images/hero_banner.png"; // 👈 Importamos la imagen
 
 export default function WelcomeCard() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   return (
     <Grid
       container
@@ -49,8 +48,7 @@ export default function WelcomeCard() {
             variant="contained"
             size="large"
             sx={{ borderRadius: 999, px: 4, py: 1.5, fontWeight: 700 }}
-            onClick={() => navigate("/login")} 
-
+            onClick={() => navigate("/login")}
           >
             COMENZAR
           </Button>
@@ -69,73 +67,19 @@ export default function WelcomeCard() {
         </Box>
       </Grid>
 
-      {/* Columna derecha: card degradado */}
+      {/* Columna derecha: imagen hero_banner */}
       <Grid item xs={12} md={5}>
-        <Paper
-          elevation={6}
+        <Box
+          component="img"
+          src={heroBanner}
+          alt="Hero Banner"
           sx={{
-            p: { xs: 4, md: 6 },
+            width: "100%",
+            height: "auto",
             borderRadius: 4,
-            height: { xs: 300, md: 400 }, // más grande
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            position: "relative",
-            overflow: "hidden",
-            background: "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)",
+            boxShadow: "0 12px 32px rgba(0,0,0,.15)",
           }}
-        >
-          {/* Decoraciones */}
-          <Box
-            sx={{
-              position: "absolute",
-              width: 280,
-              height: 280,
-              borderRadius: "50%",
-              top: -80,
-              right: -80,
-              opacity: 0.2,
-              background: "radial-gradient(circle, white, transparent 60%)",
-            }}
-          />
-          <Box
-            sx={{
-              position: "absolute",
-              width: 240,
-              height: 240,
-              borderRadius: "50%",
-              bottom: -70,
-              left: -50,
-              opacity: 0.15,
-              background: "radial-gradient(circle, white, transparent 60%)",
-            }}
-          />
-
-          {/* Contenido */}
-          <Box sx={{ textAlign: "center", color: "white" }}>
-            <Box
-              sx={{
-                width: 100,
-                height: 100,
-                borderRadius: "50%",
-                backgroundColor: "#00C853",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 40,
-                fontWeight: 800,
-                mx: "auto",
-                mb: 2,
-                boxShadow: "0 16px 40px rgba(0,0,0,.25)",
-              }}
-            >
-              W
-            </Box>
-            <Typography sx={{ fontSize: 26, fontStyle: "italic", opacity: 0.9 }}>
-              Whatsvaa CRM
-            </Typography>
-          </Box>
-        </Paper>
+        />
       </Grid>
     </Grid>
   );

@@ -142,22 +142,22 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <Toolbar />
         <List>
           <NavItem
-            to="/panel/panel-control"
+            to="panel-control"
             icon={<DashboardIcon />}
             label="Panel de control"
           />
           <NavItem
-            to="bandeja-entrada"
+            to="inbox"
             icon={<ChatIcon />}
             label="Bandeja de entrada"
           />
           <NavItem
-            to="/panel/CalentadorWhatsapp"
+            to="calentador"
             icon={<ChatIcon />}
             label="Calentador de WhatsApp"
           />
           <NavItem
-            to="/panel/phonebook"
+            to="contacts"
             icon={<ContactsIcon />}
             label="Agenda telefónica"
           />
@@ -167,7 +167,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             label="Constructor de flujos"
           />
           <NavItem
-            to="/panel/campaigns"
+            to="campaxa"
             icon={<CampaignIcon />}
             label="Campañas & Chatbots"
           />
