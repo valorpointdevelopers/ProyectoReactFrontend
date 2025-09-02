@@ -68,12 +68,12 @@ function App() {
           path="/panel/*"
           element={<DashboardLayout onToggleTheme={toggleMode} mode={mode} />}
         >
+          <Route path="inbox" element={<BandejadeEntrada />} />
+          <Route path="calentador" element={<CalentadorWhatsapp />} />
+          <Route path="contacts" element={<Phonebook />} />
+          <Route path="panel-control" element={<PanelControl />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
-          <Route path="bandeja-entrada" element={<BandejadeEntrada />} />
-          <Route path="phonebook" element={<Phonebook />} />
-          <Route path="CalentadorWhatsapp" element={<CalentadorWhatsapp />} />
-          <Route path="panelcontrol" element={<PanelControl />} />
         </Route>
       </Routes>
     </ThemeProvider>
