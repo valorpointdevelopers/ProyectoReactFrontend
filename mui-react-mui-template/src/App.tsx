@@ -71,7 +71,7 @@ function App() {
           <Route path="inbox" element={<BandejadeEntrada />} />
           <Route path="calentador" element={<CalentadorWhatsapp />} />
           <Route path="contacts" element={<Phonebook />} />
-          <Route path="panel" element={<PanelControl />} />
+          <Route path="panel-control" element={<PanelControl />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
         </Route>
