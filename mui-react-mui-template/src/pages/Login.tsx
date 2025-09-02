@@ -36,10 +36,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({});
   const [submitting, setSubmitting] = React.useState(false);
-  const [alert, setAlert] = React.useState<{ type: "success" | "error"; msg: string } | null>(null);
-
-  // Nuevo estado: solo validar después de intentar enviar
-  const [submitted, setSubmitted] = React.useState(false);
+  const [alert, setAlert] = React.useState<{ type: "success" | "error"; msg: string } | null>(
+    null
+  );
 
   const onChange = (field: keyof LoginForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = field === "remember" ? e.target.checked : e.target.value;
@@ -61,7 +60,6 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAlert(null);
-    setSubmitted(true); // <- Marca que ya intentó enviar
 
     if (!validate()) return;
 
@@ -89,7 +87,7 @@ export default function Login() {
       spacing={2}
       flexDirection={{ xs: "column", md: "row" }}
     >
-      {/* Imagen */}
+      {/* Imagen al costado */}
       <Grid item>
         <Box
           component="img"
@@ -105,7 +103,7 @@ export default function Login() {
         />
       </Grid>
 
-      {/* Formulario */}
+      {/* Login */}
       <Grid item>
         <Paper
           elevation={8}
@@ -133,8 +131,9 @@ export default function Login() {
               type="email"
               value={values.email}
               onChange={onChange("email")}
-              error={submitted && Boolean(errors.email)}
-              helperText={submitted ? errors.email : ""}
+              onBlur={() => validate()}
+              error={Boolean(errors.email)}
+              helperText={errors.email || ""}
               margin="normal"
               fullWidth
               autoComplete="email"
@@ -146,8 +145,9 @@ export default function Login() {
               type={showPassword ? "text" : "password"}
               value={values.password}
               onChange={onChange("password")}
-              error={submitted && Boolean(errors.password)}
-              helperText={submitted ? errors.password : ""}
+              onBlur={() => validate()}
+              error={Boolean(errors.password)}
+              helperText={errors.password || ""}
               margin="normal"
               fullWidth
               autoComplete="current-password"
@@ -173,8 +173,14 @@ export default function Login() {
                 }
                 label="Recordarme"
               />
-
-              <Link component={RouterLink} to="/recuperar-contraseña" variant="body2" underline="hover">
+              
+              {/* Enlace de recuperación de contraseña */}
+              <Link
+                component={RouterLink}
+                to="/recuperar-contrasena"
+                variant="body2"
+                underline="hover"
+              >
                 ¿Olvidaste tu contraseña?
               </Link>
             </Box>
@@ -195,7 +201,7 @@ export default function Login() {
 
             <Typography variant="body2" textAlign="center" color="text.secondary">
               ¿No tienes cuenta?{" "}
-              <Link component={RouterLink} to="/register" underline="hover">
+             <Link component={RouterLink} to="/register" underline="hover">
                 Regístrate
               </Link>
             </Typography>

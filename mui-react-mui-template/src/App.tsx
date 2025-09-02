@@ -7,14 +7,14 @@ import LandingLayout from "./layouts/LandingLayout";
 import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import SignupForm from "./pages/SignupForm";
-import RecuperarContraseña from "./pages/RecuperarContraseña";
+import Phonebook from "./pages/Phonebook";
+import RecuperarContrasena from "./pages/RecuperarContrasena"; 
 import Login from "./pages/Login";
 import WelcomeCard from "./components/WelcomeCard";
 import baseTheme from "./theme";
-import BandejaEntrada from "./components/BandejaEntrada";
-import Phonebook from "./components/Phonebook";
-import CalentadorWhatsapp from "./components/CalentadorWhatsapp";
-import PanelControl from"./components/PanelControl";
+import BandejadeEntrada from "./pages/BandejadeEntrada";
+import CalentadorWhatsapp from "./pages/CalentadorWhatsapp";
+import PanelControl from "./pages/PanelControl";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -60,7 +60,8 @@ function App() {
         {/* Login */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
-        <Route path="/recuperar-contraseña" element={<RecuperarContraseña />} />
+        <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
+        
 
         {/* Panel administrativo con layout */}
         <Route
@@ -69,7 +70,7 @@ function App() {
         >
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
-          <Route path="bandeja-entrada" element={<BandejaEntrada />} />
+          <Route path="bandeja-entrada" element={<BandejadeEntrada />} />
           <Route path="phonebook" element={<Phonebook />} />
           <Route path="CalentadorWhatsapp" element={<CalentadorWhatsapp />} />
           <Route path="panelcontrol" element={<PanelControl />} />

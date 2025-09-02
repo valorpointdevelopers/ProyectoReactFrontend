@@ -13,7 +13,7 @@ import {
 import { Visibility, VisibilityOff, Email as EmailIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 
-export default function RecuperarContraseña() {
+export default function RecuperarContrasena() {
   const [email, setEmail] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [alert, setAlert] = React.useState<{ type: "success" | "error"; msg: string } | null>(null);
