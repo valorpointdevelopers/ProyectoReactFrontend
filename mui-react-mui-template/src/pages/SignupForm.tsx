@@ -11,7 +11,6 @@ import {
   InputAdornment,
   IconButton,
   FormHelperText,
-  Link,
 } from '@mui/material';
 import { FiUser, FiMail, FiLock, FiPhone, FiKey, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useTheme } from '@mui/material/styles';
@@ -114,8 +113,6 @@ const SignupForm: React.FC = () => {
             backgroundColor: 'transparent',
           }}
         >
-         
-
           {/* Título y subtítulo */}
           <Typography
             variant="h5"
@@ -130,7 +127,7 @@ const SignupForm: React.FC = () => {
             Comienza con una cuenta de demostración en WaCRM
           </Typography>
 
-           {/* Texto arriba del formulario */}
+          {/* Texto arriba del formulario */}
           <Typography
             align="center"
             sx={{ mb: 3, color: theme.palette.text.secondary, fontSize: 14 }}
@@ -225,6 +222,7 @@ const SignupForm: React.FC = () => {
               size="small"
               placeholder="Tu número de móvil"
               name="mobile"
+              type="tel"
               value={formData.mobile}
               onChange={handleChange}
               margin="dense"
@@ -237,6 +235,11 @@ const SignupForm: React.FC = () => {
                   </InputAdornment>
                 ),
               }}
+              inputProps={{
+                pattern: "^[+0-9]+$", // SOLO permite números y "+"
+                title: "Solo se permiten números y el símbolo +",
+              }}
+              required
             />
 
             {/* Checkbox y helper text */}
@@ -283,9 +286,9 @@ const SignupForm: React.FC = () => {
               sx={{ mt: 2, fontSize: 14, color: theme.palette.text.secondary }}
             >
               ¿Ya tienes una cuenta?{' '}
-   <Link component={RouterLink} to="/login" underline="hover" sx={{ fontWeight: 'bold' }}>
+              <RouterLink to="/login" style={{ textDecoration: 'underline', fontWeight: 'bold' }}>
                 Iniciar sesión
-              </Link>
+              </RouterLink>
             </Typography>
           </form>
         </Paper>

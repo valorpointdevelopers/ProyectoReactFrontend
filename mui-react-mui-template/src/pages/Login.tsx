@@ -16,7 +16,7 @@ import {
   Divider,
 } from "@mui/material";
 import { Visibility, VisibilityOff, Login as LoginIcon } from "@mui/icons-material";
-import { Link as RouterLink } from "react-router-dom"; // <- Import necesario para React Router
+import { Link as RouterLink } from "react-router-dom";
 
 type LoginForm = {
   email: string;
@@ -45,21 +45,13 @@ export default function Login() {
     setValues((v) => ({ ...v, [field]: value }));
   };
 
-  const validate = (dirtyAll = false) => {
+  const validate = () => {
     const next: { email?: string; password?: string } = {};
-    if (dirtyAll || values.email) {
-      if (!values.email) next.email = "Ingresa tu correo";
-      else if (!validateEmail(values.email)) next.email = "Correo inválido";
-    } else {
-      next.email = "Ingresa tu correo";
-    }
+    if (!values.email) next.email = "Ingresa tu correo";
+    else if (!validateEmail(values.email)) next.email = "Correo inválido";
 
-    if (dirtyAll || values.password) {
-      if (!values.password) next.password = "Ingresa tu contraseña";
-      else if (values.password.length < 6) next.password = "Mínimo 6 caracteres";
-    } else {
-      next.password = "Ingresa tu contraseña";
-    }
+    if (!values.password) next.password = "Ingresa tu contraseña";
+    else if (values.password.length < 6) next.password = "Mínimo 6 caracteres";
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -68,7 +60,8 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAlert(null);
-    if (!validate(true)) return;
+
+    if (!validate()) return;
 
     setSubmitting(true);
     try {
