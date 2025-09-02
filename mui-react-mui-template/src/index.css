@@ -1,3 +1,11 @@
+html, body, #root {
+  height: 100%;        /* ocupa toda la ventana */
+  width: 100%;         /* evita overflow horizontal */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;    /* elimina scrolls */
+}
+
 body {
   margin: 0;
   font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;

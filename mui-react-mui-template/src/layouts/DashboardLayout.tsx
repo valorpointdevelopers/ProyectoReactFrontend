@@ -1,4 +1,3 @@
-// DashboardLayout adaptado al proyecto final
 import React, { useState } from "react"
 import { Outlet, Link, useLocation } from "react-router-dom"
 import {
@@ -143,36 +142,36 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <Toolbar />
         <List>
           <NavItem
-            to="panel"
+            to="/panel/panel-control"
             icon={<DashboardIcon />}
             label="Panel de control"
           />
-          <NavItem 
-          to="inbox" 
-          icon={<ChatIcon />} 
-          label="Bandeja de entrada" />
-          
-          <NavItem 
-          to="calentador" 
-          icon={<ChatIcon />} 
-          label="Calentador de whatsapp" />
-
           <NavItem
-            to="/panel/contacts"
+            to="bandeja-entrada"
+            icon={<ChatIcon />}
+            label="Bandeja de entrada"
+          />
+          <NavItem
+            to="/panel/CalentadorWhatsapp"
+            icon={<ChatIcon />}
+            label="Calentador de WhatsApp"
+          />
+          <NavItem
+            to="/panel/phonebook"
             icon={<ContactsIcon />}
             label="Agenda telefónica"
           />
           <NavItem
-            to="/flows"
+            to="/panel/flows"
             icon={<BuildIcon />}
             label="Constructor de flujos"
           />
           <NavItem
-            to="/campaigns"
+            to="/panel/campaigns"
             icon={<CampaignIcon />}
             label="Campañas & Chatbots"
           />
-          <NavItem to="/api" icon={<ApiIcon />} label="Acceso API" />
+          <NavItem to="/panel/api" icon={<ApiIcon />} label="Acceso API" />
         </List>
       </Drawer>
 
