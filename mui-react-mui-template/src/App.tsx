@@ -62,6 +62,7 @@ function App() {
         {/* Login / Registro */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
+        <Route path="/recuperar-contrasena" element={<Recuperar/>} />
 
         {/* Panel administrativo */}
         <Route

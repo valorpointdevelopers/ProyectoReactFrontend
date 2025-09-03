@@ -84,12 +84,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const isLight = mode === "light";
-  const navigate = useNavigate(); // Inicializamos el hook de navegación
+  const navigate = useNavigate();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
 
-  // Estados para controlar los modales
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [plansOpen, setPlansOpen] = useState(false);
@@ -120,7 +119,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     setProfileOpen(false);
   };
 
-  // Funciones para el nuevo modal de planes
   const handlePlansClick = () => {
     setPlansOpen(true);
   };
@@ -129,13 +127,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     setPlansOpen(false);
   };
 
-  // Lógica para el botón "Ver todos los planes" en el modal de perfil
   const handleViewPlansFromProfile = () => {
     handleProfileClose();
     handlePlansClick();
   };
 
-  // Lógica para el botón "Ver todos los planes" en el modal de suscripción
   const handleViewPlansFromSubscription = () => {
     handleSubscriptionClose();
     handlePlansClick();
@@ -145,7 +141,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleLogout = () => {
     handleMenuClose();
-    navigate('/'); // Redirige a la URL raíz del proyecto (http://localhost:5173/)
+    navigate('/');
   };
 
   const SubscriptionItem = ({ icon, label, value }: any) => {
@@ -167,12 +163,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           ) : isNumber ? (
             <Chip
               label={value}
-              sx={{ backgroundColor: theme.palette.grey[300], fontWeight: "bold" }}
+              sx={{ backgroundColor: isLight ? theme.palette.grey[300] : theme.palette.grey[800], fontWeight: "bold" }}
             />
           ) : isString ? (
             <Chip
               label={value}
-              sx={{ backgroundColor: theme.palette.grey[300], fontWeight: "bold" }}
+              sx={{ backgroundColor: isLight ? theme.palette.grey[300] : theme.palette.grey[800], fontWeight: "bold" }}
             />
           ) : null}
         </Grid>
@@ -453,10 +449,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             icon={<CampaignIcon />}
             label="Campañas & Chatbots"
           />
-          <NavItem 
-          to="/panel/api" 
-          icon={<ApiIcon />} 
-          label="Acceso API" />
+          <NavItem
+            to="/panel/api"
+            icon={<ApiIcon />}
+            label="Acceso API" />
         </List>
       </Drawer>
 
@@ -471,8 +467,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         onClose={handleSubscriptionClose}
         maxWidth="xs"
         fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            backgroundColor: theme.palette.background.paper, // Asegura el fondo del modal en modo oscuro
+            color: theme.palette.text.primary,
+          },
+        }}
       >
-        <DialogTitle sx={{ m: 0, p: 2 }}>
+        <DialogTitle sx={{ m: 0, p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
           <Box display="flex" alignItems="center">
             <Typography variant="h6">Suscripción</Typography>
             <IconButton
@@ -482,7 +484,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 position: "absolute",
                 right: 8,
                 top: 8,
-                color: (theme) => theme.palette.grey[500],
+                color: theme.palette.text.secondary,
               }}
             >
               <CloseIcon />
@@ -490,7 +492,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Box>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>
-          <Box sx={{ p: 2, display: "flex", alignItems: "center", backgroundColor: theme.palette.grey[100] }}>
+          <Box sx={{ p: 2, display: "flex", alignItems: "center", backgroundColor: theme.palette.action.hover }}>
             <Box
               component="span"
               role="img"
@@ -574,8 +576,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         onClose={handleProfileClose}
         maxWidth="xs"
         fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            backgroundColor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+          },
+        }}
       >
-        <DialogTitle sx={{ m: 0, p: 2 }}>
+        <DialogTitle sx={{ m: 0, p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
           <Box display="flex" alignItems="center">
             <Typography variant="h6">Perfil</Typography>
             <IconButton
@@ -585,7 +593,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 position: "absolute",
                 right: 8,
                 top: 8,
-                color: (theme) => theme.palette.grey[500],
+                color: theme.palette.text.secondary,
               }}
             >
               <CloseIcon />
@@ -602,7 +610,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
-                    <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
+                    <ListItemIcon sx={{ minWidth: 0, mr: 1, color: 'inherit' }}>
                       <DriveFileRenameOutlineIcon fontSize="small" />
                     </ListItemIcon>
                   ),
@@ -617,7 +625,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
-                    <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
+                    <ListItemIcon sx={{ minWidth: 0, mr: 1, color: 'inherit' }}>
                       <MailOutlineIcon fontSize="small" />
                     </ListItemIcon>
                   ),
@@ -632,7 +640,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
-                    <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
+                    <ListItemIcon sx={{ minWidth: 0, mr: 1, color: 'inherit' }}>
                       <WhatsAppIcon fontSize="small" />
                     </ListItemIcon>
                   ),
@@ -647,7 +655,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
-                    <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
+                    <ListItemIcon sx={{ minWidth: 0, mr: 1, color: 'inherit' }}>
                       <SyncLockIcon fontSize="small" />
                     </ListItemIcon>
                   ),
@@ -690,7 +698,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             }}
           >
             <Box component="span" role="img" aria-label="star" sx={{ mr: 1 }}>
-                ⭐
+              ⭐
             </Box>
             VER TODOS LOS PLANES
           </Button>
@@ -703,9 +711,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         onClose={handlePlansClose}
         maxWidth="xl"
         fullWidth
-        sx={{ "& .MuiDialog-paper": { mx: 2, my: 2 } }}
+        sx={{
+          "& .MuiDialog-paper": { mx: 2, my: 2, backgroundColor: theme.palette.background.default },
+        }}
       >
-        <DialogTitle sx={{ m: 0, p: 2 }}>
+        <DialogTitle sx={{ m: 0, p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
           <Box display="flex" alignItems="center" justifyContent="space-between">
             <Box>
               <Typography variant="h6">Planes</Typography>
@@ -714,14 +724,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               aria-label="close"
               onClick={handlePlansClose}
               sx={{
-                color: (theme) => theme.palette.grey[500],
+                color: theme.palette.text.secondary,
               }}
             >
               <CloseIcon />
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ p: 2 }}>
           <Grid container spacing={4} justifyContent="center" alignItems="stretch">
             {plans.map((plan, index) => (
               <Grid item xs={12} sm={6} md={3} key={index}>
@@ -731,7 +741,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Grid>
         </DialogContent>
       </Dialog>
-
     </Box>
   );
 };
