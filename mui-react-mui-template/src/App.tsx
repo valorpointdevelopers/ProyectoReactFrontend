@@ -64,7 +64,6 @@ function App() {
         <Route path="/register" element={<SignupForm />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
         
-
         {/* Panel administrativo con layout */}
         <Route
           path="/panel/*"
