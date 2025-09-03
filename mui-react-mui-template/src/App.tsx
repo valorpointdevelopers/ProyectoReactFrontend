@@ -13,6 +13,8 @@ import BandejadeEntrada from "./pages/BandejadeEntrada";
 import PanelControl from "./pages/PanelControl";
 import CampaxaChat from "./pages/CampaxaChat";
 import QrWhatsapp from "./pages/QrWhatsapp";
+import AccountPage from "./pages/AccountPage";
+import InstancesPage from "./pages/InstancesPage";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -60,7 +62,7 @@ function App() {
         {/* Login */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
-        
+
         {/* Panel administrativo con layout */}
         <Route
           path="/panel/*"
@@ -70,6 +72,8 @@ function App() {
           <Route path="panel-control" element={<PanelControl />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="campaxa" element={<CampaxaChat />} />
+          <Route path="account" element={<AccountPage />} />
+          <Route path="instances" element={<InstancesPage />} />
         </Route>
       </Routes>
 
@@ -77,7 +81,7 @@ function App() {
       {location.pathname === "/panel/panel-control" && (
         <QrWhatsapp
           open={true}
-          onClose={() => navigate("/panel/dashboard")} // 👈 al cerrar redirige
+          onClose={() => navigate("/panel/dashboard")}
         />
       )}
     </ThemeProvider>

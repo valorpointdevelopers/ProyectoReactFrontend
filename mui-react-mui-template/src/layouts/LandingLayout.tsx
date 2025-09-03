@@ -15,7 +15,7 @@ import RedeemIcon from "@mui/icons-material/Redeem";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 
-import QrWhatsapp from "../pages/QrWhatsapp"; // ✅ correcto
+import QrWhatsapp from "../pages/QrWhatsapp";
 
 type Props = {
   children: React.ReactNode;
@@ -31,7 +31,6 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
   const [openQR, setOpenQR] = useState(false);
 
   useEffect(() => {
-    console.log("📍 pathname actual:", location.pathname); // 👈 debug
     if (location.pathname.startsWith("/panel/panel-control")) {
       setOpenQR(true);
     } else {
@@ -40,7 +39,7 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
   }, [location]);
 
   return (
-    <Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar
         position="sticky"
         elevation={0}
@@ -52,14 +51,12 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
         }}
       >
         <Toolbar sx={{ minHeight: 72 }}>
-          {/* Logo */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mr: 3 }}>
             <Typography variant="subtitle1" fontWeight={600}>
               Whatsvaa
             </Typography>
           </Box>
 
-          {/* Links */}
           <Stack direction="row" spacing={3} sx={{ flexGrow: 1 }}>
             <MUILink component={RouterLink} to="#" underline="none" color="text.primary">
               Política de privacidad
@@ -72,7 +69,6 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
             </MUILink>
           </Stack>
 
-          {/* Botón cambio de tema */}
           {onToggleTheme && (
             <IconButton
               onClick={onToggleTheme}
@@ -89,8 +85,6 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
               {isLight ? <DarkModeIcon htmlColor="#000" /> : <LightModeIcon htmlColor="#fff" />}
             </IconButton>
           )}
-
-          {/* Botón a Panel */}
           <Button
             component={RouterLink}
             to="/panel/panel-control"
@@ -103,8 +97,9 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
         </Toolbar>
       </AppBar>
 
-      {/* Contenido */}
-      <Box sx={{ py: { xs: 6, md: 10 } }}>{children}</Box>
+      <Box sx={{ py: { xs: 6, md: 10 }, flexGrow: 1, overflowY: 'auto' }}>
+        {children}
+      </Box>
 
       {/* QR encima del panel */}
       <QrWhatsapp open={openQR} onClose={() => setOpenQR(false)} />
