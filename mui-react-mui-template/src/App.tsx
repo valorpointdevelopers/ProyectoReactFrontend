@@ -15,10 +15,7 @@ import baseTheme from "./theme";
 import BandejadeEntrada from "./pages/BandejadeEntrada";
 import CalentadorWhatsapp from "./pages/CalentadorWhatsapp";
 import PanelControl from "./pages/PanelControl";
-import CampaxaChat  from "./pages/CampaxaChat";
-import ConstructorFlujos from "./pages/ConstructorFlujos";
-
-
+import CampaxaChat  from "./pages/CampaxaChat"
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -79,8 +76,6 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="campaxa" element={<CampaxaChat />} />
-          <Route path="flows" element={<ConstructorFlujos />} />
-
         </Route>
       </Routes>
     </ThemeProvider>
