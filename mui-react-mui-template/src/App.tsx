@@ -2,10 +2,8 @@ import React, { useMemo, useState } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-
 import DashboardLayout from "./layouts/DashboardLayout";
 import LandingLayout from "./layouts/LandingLayout";
-
 import Dashboard from "./pages/Dashboard";
 import SignupForm from "./pages/SignupForm";
 import Login from "./pages/Login";
@@ -15,6 +13,12 @@ import BandejadeEntrada from "./pages/BandejadeEntrada";
 import PanelControl from "./pages/PanelControl";
 import CampaxaChat from "./pages/CampaxaChat";
 import QrWhatsapp from "./pages/QrWhatsapp";
+import Api from "./pages/Api";
+import Instances from "./pages/InstancesPage";
+import InstancesPage from "./pages/InstancesPage";
+import Recuperar from "./pages/RecuperarContrasena";
+
+
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -62,6 +66,7 @@ function App() {
         {/* Login / Registro */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
+        <Route path="/recuperar-contrasena" element={<Recuperar/>} />
 
         {/* Panel administrativo */}
         <Route
@@ -72,6 +77,10 @@ function App() {
           <Route path="panel-control" element={<PanelControl />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="campaxa" element={<CampaxaChat />} />
+          <Route path="api" element={<Api />} />
+          <Route path="instances" element={<InstancesPage />} />
+          
+
         </Route>
       </Routes>
 

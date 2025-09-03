@@ -105,7 +105,7 @@ const InstancesPage = () => {
             >
               Agregar instancia
             </Button>
-            {/* Se ha eliminado el botón "¿Cómo?" */}
+            {/**/}
           </Box>
         </Box>
       </Box>
