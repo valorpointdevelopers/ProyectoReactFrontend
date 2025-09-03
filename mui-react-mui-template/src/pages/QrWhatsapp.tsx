@@ -21,6 +21,7 @@ const Backdrop: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
     transition={{ duration: 0.18 }}
+
     onClick={onClick} // solo cierra modal
     style={{
       position: "fixed",
@@ -69,6 +70,7 @@ const Card: React.FC<React.PropsWithChildren<{ onClose?: () => void; title?: str
     >
       {/* Botón de cierre */}
       <button
+
         onClick={onClose} // solo cierra modal
         aria-label="Cerrar"
         style={{

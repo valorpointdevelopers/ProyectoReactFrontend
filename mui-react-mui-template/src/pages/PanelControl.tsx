@@ -20,10 +20,12 @@ const PanelControl: React.FC = () => {
       sx={{
         flexGrow: 1,
         p: 4,
+
         backgroundColor: theme.palette.background.default,
         color: theme.palette.text.primary,
       }}
     >
+
       <Typography
         variant="h4"
         gutterBottom
@@ -42,6 +44,7 @@ const PanelControl: React.FC = () => {
       >
         Abrir QR WhatsApp
       </Button>
+
 
       <Grid container spacing={4}>
         {/* Sección de Resumen */}
@@ -118,12 +121,14 @@ const PanelControl: React.FC = () => {
                 <Typography variant="h5" sx={{ fontWeight: "bold" }}>
                   0
                 </Typography>
+           
+      
               </Box>
             </Box>
           </Paper>
         </Grid>
 
-        {/* Sección de Gráficas Principales */}
+        {/* Sección de Actividad */}
         <Grid item xs={12} md={8}>
           <Paper
             elevation={3}
@@ -157,6 +162,7 @@ const PanelControl: React.FC = () => {
                       : theme.palette.grey[400],
                 }}
               >
+    
                 Gráfica de Actividad (Sin Datos)
               </Typography>
             </Box>

@@ -15,7 +15,11 @@ import RedeemIcon from "@mui/icons-material/Redeem";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 
+<<<<<<< HEAD
 import QrWhatsapp from "../pages/QrWhatsapp";
+=======
+import QrWhatsapp from "../pages/QrWhatsapp"; // ✅ correcto
+>>>>>>> origin/develop
 
 type Props = {
   children: React.ReactNode;
@@ -31,6 +35,10 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
   const [openQR, setOpenQR] = useState(false);
 
   useEffect(() => {
+<<<<<<< HEAD
+=======
+    console.log("📍 pathname actual:", location.pathname); // 👈 debug
+>>>>>>> origin/develop
     if (location.pathname.startsWith("/panel/panel-control")) {
       setOpenQR(true);
     } else {
@@ -57,6 +65,10 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
             </Typography>
           </Box>
 
+<<<<<<< HEAD
+=======
+          {/* Links */}
+>>>>>>> origin/develop
           <Stack direction="row" spacing={3} sx={{ flexGrow: 1 }}>
             <MUILink component={RouterLink} to="#" underline="none" color="text.primary">
               Política de privacidad
@@ -69,6 +81,10 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
             </MUILink>
           </Stack>
 
+<<<<<<< HEAD
+=======
+          {/* Botón cambio de tema */}
+>>>>>>> origin/develop
           {onToggleTheme && (
             <IconButton
               onClick={onToggleTheme}
@@ -100,9 +116,14 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
         </Toolbar>
       </AppBar>
 
+<<<<<<< HEAD
       <Box sx={{ py: { xs: 6, md: 10 }, flexGrow: 1, overflowY: "auto" }}>
         {children}
       </Box>
+=======
+      {/* Contenido */}
+      <Box sx={{ py: { xs: 6, md: 10 } }}>{children}</Box>
+>>>>>>> origin/develop
 
       {/* QR encima del panel */}
       <QrWhatsapp open={openQR} onClose={() => setOpenQR(false)} />
