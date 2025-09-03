@@ -18,7 +18,6 @@ import PanelControl from "./pages/PanelControl";
 import CampaxaChat from "./pages/CampaxaChat";
 import AccountPage from "./pages/AccountPage";
 import InstancesPage from "./pages/InstancesPage";
-import SubscriptionPage from "./pages/SubscriptionPage";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -80,7 +79,6 @@ function App() {
           <Route path="campaxa" element={<CampaxaChat />} />
           <Route path="account" element={<AccountPage />} />
           <Route path="instances" element={<InstancesPage />} />
-          <Route path="subscription" element={<SubscriptionPage />} />
         </Route>
       </Routes>
     </ThemeProvider>
