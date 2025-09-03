@@ -21,6 +21,7 @@ import {
   IconButton,
   Divider,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 type ChatbotRow = {
   id: number;
@@ -47,6 +48,10 @@ export default function CampaxaChat() {
   // Menú activo (lado izquierdo)
   const [activeMenu, setActiveMenu] = useState<"chatbot" | "campanas">("chatbot");
 
+  // Detectar modo de tema (claro/oscuro)
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
   // --- Estado "Agregar chatbot" ---
   const [showAddChatbot, setShowAddChatbot] = useState(false);
   const [titulo, setTitulo] = useState("");
@@ -54,7 +59,10 @@ export default function CampaxaChat() {
   const [paraTodos, setParaTodos] = useState(false);
   const [flujo, setFlujo] = useState("");
   const [rows, setRows] = useState<ChatbotRow[]>([]);
-  const nextId = useMemo(() => (rows.length ? Math.max(...rows.map(r => r.id)) + 1 : 1), [rows]);
+  const nextId = useMemo(
+    () => (rows.length ? Math.max(...rows.map(r => r.id)) + 1 : 1),
+    [rows]
+  );
 
   const handleEnviar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,12 +132,18 @@ export default function CampaxaChat() {
         p={3}
       >
         <Box mb={2}>
-          <img src={sendingImg} alt="Ilustración mujer" style={{ width: "160px", height: "160px", objectFit: "contain" }} />
+          <img
+            src={sendingImg}
+            alt="Ilustración mujer"
+            style={{ width: "160px", height: "160px", objectFit: "contain" }}
+          />
         </Box>
         <Typography variant="body2" align="center" sx={{ mb: 3, color: "text.secondary" }}>
           Automatiza o transmite usando tu <br /> WhatsApp aquí y mucho más
         </Typography>
+
         <Box display="flex" flexDirection="column" gap={1} width="100%">
+          {/* Botón Chatbot */}
           <Button
             startIcon={<Home size={20} />}
             sx={{
@@ -137,13 +151,21 @@ export default function CampaxaChat() {
               borderRadius: "20px",
               fontWeight: activeMenu === "chatbot" ? 600 : 400,
               bgcolor: activeMenu === "chatbot" ? "action.selected" : "transparent",
-              color: activeMenu === "chatbot" ? "black" : "text.primary",
+              // Texto blanco en dark, negro en light cuando está activo
+              color:
+                activeMenu === "chatbot"
+                  ? isDark
+                    ? "white"
+                    : "black"
+                  : "text.primary",
               "&:hover": { bgcolor: "action.hover" },
             }}
             onClick={() => setActiveMenu("chatbot")}
           >
             Chatbot
           </Button>
+
+          {/* Botón Campañas */}
           <Button
             startIcon={<Radio size={20} />}
             sx={{
@@ -151,7 +173,13 @@ export default function CampaxaChat() {
               borderRadius: "20px",
               fontWeight: activeMenu === "campanas" ? 600 : 400,
               bgcolor: activeMenu === "campanas" ? "action.selected" : "transparent",
-              color: activeMenu === "campanas" ? "black" : "text.primary",
+              // Texto blanco en dark, negro en light cuando está activo
+              color:
+                activeMenu === "campanas"
+                  ? isDark
+                    ? "white"
+                    : "black"
+                  : "text.primary",
               "&:hover": { bgcolor: "action.hover" },
             }}
             onClick={() => setActiveMenu("campanas")}
@@ -200,11 +228,20 @@ export default function CampaxaChat() {
                   <Box component="form" onSubmit={handleEnviar}>
                     <Grid container spacing={2}>
                       <Grid item xs={12} md={6}>
-                        <TextField fullWidth size="small" label="Título del chatbot" value={titulo} onChange={e => setTitulo(e.target.value)} />
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Título del chatbot"
+                          value={titulo}
+                          onChange={e => setTitulo(e.target.value)}
+                        />
                       </Grid>
                       <Grid item xs={12} md={6}>
                         <Select
-                          fullWidth size="small" displayEmpty value={instancia}
+                          fullWidth
+                          size="small"
+                          displayEmpty
+                          value={instancia}
                           onChange={e => setInstancia(e.target.value as string)}
                           renderValue={val => (val ? val : "Seleccionar instancia")}
                         >
@@ -214,11 +251,17 @@ export default function CampaxaChat() {
                         </Select>
                       </Grid>
                       <Grid item xs={12}>
-                        <FormControlLabel control={<Switch checked={paraTodos} onChange={e => setParaTodos(e.target.checked)} />} label="¿Para todos?" />
+                        <FormControlLabel
+                          control={<Switch checked={paraTodos} onChange={e => setParaTodos(e.target.checked)} />}
+                          label="¿Para todos?"
+                        />
                       </Grid>
                       <Grid item xs={12}>
                         <Select
-                          fullWidth size="small" displayEmpty value={flujo}
+                          fullWidth
+                          size="small"
+                          displayEmpty
+                          value={flujo}
                           onChange={e => setFlujo(e.target.value as string)}
                           renderValue={val => (val ? val : "Seleccionar flujo")}
                         >
@@ -228,7 +271,12 @@ export default function CampaxaChat() {
                         </Select>
                       </Grid>
                       <Grid item xs={12}>
-                        <Button type="submit" variant="contained" startIcon={<Send size={16} />} sx={{ bgcolor: "black", "&:hover": { bgcolor: "#111" }, borderRadius: 2 }}>
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          startIcon={<Send size={16} />}
+                          sx={{ bgcolor: "black", "&:hover": { bgcolor: "#111" }, borderRadius: 2 }}
+                        >
                           Enviar
                         </Button>
                       </Grid>
@@ -264,20 +312,35 @@ export default function CampaxaChat() {
                           <TableCell>{row.titulo}</TableCell>
                           <TableCell>{row.paraTodos ? "Sí" : "No"}</TableCell>
                           <TableCell>{row.flujo}</TableCell>
-                          <TableCell><Switch checked={row.activo} onChange={() => handleToggleActivo(row.id)} /></TableCell>
+                          <TableCell>
+                            <Switch checked={row.activo} onChange={() => handleToggleActivo(row.id)} />
+                          </TableCell>
                           <TableCell>{row.instancia}</TableCell>
                           <TableCell><IconButton size="small"><Pencil size={16} /></IconButton></TableCell>
-                          <TableCell><IconButton size="small" color="error" onClick={() => handleEliminar(row.id)}><Trash2 size={16} /></IconButton></TableCell>
+                          <TableCell>
+                            <IconButton size="small" color="error" onClick={() => handleEliminar(row.id)}>
+                              <Trash2 size={16} />
+                            </IconButton>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
                   </TableBody>
                 </Table>
                 <Divider sx={{ my: 2 }} />
-                <Box display="flex" justifyContent="space-between" alignItems="center" fontSize="12px" color="text.secondary">
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  fontSize="12px"
+                  color="text.secondary"
+                >
                   <span>Rows per page: 100</span>
                   <span>0–0 of {rows.length}</span>
-                  <Box display="flex" gap={1}><Button size="small">{`<`}</Button><Button size="small">{`>`}</Button></Box>
+                  <Box display="flex" gap={1}>
+                    <Button size="small">{`<`}</Button>
+                    <Button size="small">{`>`}</Button>
+                  </Box>
                 </Box>
               </CardContent>
             </Card>
@@ -321,31 +384,107 @@ export default function CampaxaChat() {
                   <Box component="form" onSubmit={handleEnviarCampana}>
                     <Grid container spacing={2}>
                       <Grid item xs={12} md={6}>
-                        <TextField fullWidth size="small" label="Título de la campaña" value={campTitulo} onChange={e => setCampTitulo(e.target.value)} />
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="text"
+                          label="Título de la campaña"
+                          value={campTitulo}
+                          onChange={e => setCampTitulo(e.target.value)}
+                        />
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <TextField fullWidth size="small" label="Plantilla" value={plantilla} onChange={e => setPlantilla(e.target.value)} />
+                        <Select
+                          fullWidth
+                          size="small"
+                          displayEmpty
+                          value={plantilla}
+                          onChange={e => setPlantilla(e.target.value as string)}
+                          renderValue={val => (val ? val : "Seleccionar plantilla")}
+                        >
+                          <MenuItem value="Bienvenida">Bienvenida</MenuItem>
+                          <MenuItem value="Promo">Promo</MenuItem>
+                          <MenuItem value="Recordatorio">Recordatorio</MenuItem>
+                        </Select>
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <TextField fullWidth size="small" label="Agenda telefónica" value={agenda} onChange={e => setAgenda(e.target.value)} />
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="tel"
+                          label="Agenda telefónica"
+                          value={agenda}
+                          onChange={e => setAgenda(e.target.value)}
+                        />
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <TextField fullWidth size="small" label="Estado" value={estado} onChange={e => setEstado(e.target.value)} />
+                        <Select
+                          fullWidth
+                          size="small"
+                          displayEmpty
+                          value={estado}
+                          onChange={e => setEstado(e.target.value as string)}
+                          renderValue={val => (val ? val : "Seleccionar estado")}
+                        >
+                          <MenuItem value="Activo">Activo</MenuItem>
+                          <MenuItem value="Inactivo">Inactivo</MenuItem>
+                        </Select>
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <TextField fullWidth size="small" label="Programar" value={programar} onChange={e => setProgramar(e.target.value)} />
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="datetime-local"
+                          label="Programar"
+                          value={programar}
+                          onChange={e => setProgramar(e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                        />
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <TextField fullWidth size="small" label="Retraso desde" value={retrasoDesde} onChange={e => setRetrasoDesde(e.target.value)} />
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="time"
+                          label="Retraso desde"
+                          value={retrasoDesde}
+                          onChange={e => setRetrasoDesde(e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                        />
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <TextField fullWidth size="small" label="Retraso hasta" value={retrasoHasta} onChange={e => setRetrasoHasta(e.target.value)} />
+                        <TextField
+                          fullWidth
+                          size="small"
+                          type="time"
+                          label="Retraso hasta"
+                          value={retrasoHasta}
+                          onChange={e => setRetrasoHasta(e.target.value)}
+                          InputLabelProps={{ shrink: true }}
+                        />
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <TextField fullWidth size="small" label="Zona horaria" value={zonaHoraria} onChange={e => setZonaHoraria(e.target.value)} />
+                        <Select
+                          fullWidth
+                          size="small"
+                          displayEmpty
+                          value={zonaHoraria}
+                          onChange={e => setZonaHoraria(e.target.value as string)}
+                          renderValue={val => (val ? val : "Seleccionar zona horaria")}
+                        >
+                          <MenuItem value="America/Mexico_City">México</MenuItem>
+                          <MenuItem value="America/Bogota">Colombia</MenuItem>
+                          <MenuItem value="America/Lima">Perú</MenuItem>
+                          <MenuItem value="Europe/Madrid">España</MenuItem>
+                        </Select>
                       </Grid>
                       <Grid item xs={12}>
-                        <Button type="submit" variant="contained" startIcon={<Send size={16} />} sx={{ bgcolor: "black", "&:hover": { bgcolor: "#111" }, borderRadius: 2 }}>
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          startIcon={<Send size={16} />}
+                          sx={{ bgcolor: "black", "&:hover": { bgcolor: "#111" }, borderRadius: 2 }}
+                        >
                           Enviar
                         </Button>
                       </Grid>
@@ -383,23 +522,31 @@ export default function CampaxaChat() {
                           <TableCell>{c.plantilla}</TableCell>
                           <TableCell>{c.agenda}</TableCell>
                           <TableCell>{c.estado}</TableCell>
-                          <TableCell>{c.programar}</TableCell>
+                          <TableCell>
+                            {c.programar
+                              ? new Date(c.programar).toLocaleString("es-MX", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : ""}
+                          </TableCell>
                           <TableCell>{c.retrasoDesde}</TableCell>
                           <TableCell>{c.retrasoHasta}</TableCell>
                           <TableCell>{c.zonaHoraria}</TableCell>
                           <TableCell><IconButton size="small"><Eye size={16} /></IconButton></TableCell>
-                          <TableCell><IconButton size="small" color="error" onClick={() => handleEliminarCampana(c.id)}><Trash2 size={16} /></IconButton></TableCell>
+                          <TableCell>
+                            <IconButton size="small" color="error" onClick={() => handleEliminarCampana(c.id)}>
+                              <Trash2 size={16} />
+                            </IconButton>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
                   </TableBody>
                 </Table>
-                <Divider sx={{ my: 2 }} />
-                <Box display="flex" justifyContent="space-between" alignItems="center" fontSize="12px" color="text.secondary">
-                  <span>Rows per page: 100</span>
-                  <span>0–0 of {campanas.length}</span>
-                  <Box display="flex" gap={1}><Button size="small">{`<`}</Button><Button size="small">{`>`}</Button></Box>
-                </Box>
               </CardContent>
             </Card>
           </>

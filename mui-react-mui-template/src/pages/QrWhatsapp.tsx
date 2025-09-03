@@ -3,18 +3,6 @@ import { X, Smartphone, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import QRCode from "react-qr-code";
 
-/**
- * QrWhatsapp.tsx
- *
- * Modal de pantalla completa que muestra un QR al estilo WhatsApp Web
- * sobre una cortina semitransparente. Se ve el fondo detrás.
- *
- * Uso:
- *   <QrWhatsapp open={open} onClose={() => setOpen(false)} />
- *   // También puedes personalizar el valor del QR:
- *   <QrWhatsapp open value={miValorQR} />
- */
-
 export type QrWhatsappProps = {
   open?: boolean;
   onClose?: () => void;

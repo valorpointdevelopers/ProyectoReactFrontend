@@ -131,7 +131,6 @@ export default function Login() {
               type="email"
               value={values.email}
               onChange={onChange("email")}
-              onBlur={() => validate()}
               error={Boolean(errors.email)}
               helperText={errors.email || ""}
               margin="normal"
@@ -140,31 +139,31 @@ export default function Login() {
               autoFocus
             />
 
-            <TextField
-              label="Contraseña"
-              type={showPassword ? "text" : "password"}
-              value={values.password}
-              onChange={onChange("password")}
-              onBlur={() => validate()}
-              error={Boolean(errors.password)}
-              helperText={errors.password || ""}
-              margin="normal"
-              fullWidth
-              autoComplete="current-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                      onClick={() => setShowPassword((s) => !s)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+              <TextField
+                label="Contraseña"
+                type={showPassword ? "text" : "password"}
+                value={values.password}
+                onChange={onChange("password")}
+                error={Boolean(errors.password)}
+                helperText={errors.password || ""}
+                margin="normal"
+                fullWidth
+                autoComplete="current-password"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                        onClick={() => setShowPassword((s) => !s)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
 
             <Box mt={1} mb={2} display="flex" alignItems="center" justifyContent="space-between">
               <FormControlLabel
