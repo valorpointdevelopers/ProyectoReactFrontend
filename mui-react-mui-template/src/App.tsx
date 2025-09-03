@@ -2,8 +2,10 @@ import React, { useMemo, useState } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+
 import DashboardLayout from "./layouts/DashboardLayout";
 import LandingLayout from "./layouts/LandingLayout";
+
 import Dashboard from "./pages/Dashboard";
 import SignupForm from "./pages/SignupForm";
 import Login from "./pages/Login";
@@ -13,8 +15,6 @@ import BandejadeEntrada from "./pages/BandejadeEntrada";
 import PanelControl from "./pages/PanelControl";
 import CampaxaChat from "./pages/CampaxaChat";
 import QrWhatsapp from "./pages/QrWhatsapp";
-import AccountPage from "./pages/AccountPage";
-import InstancesPage from "./pages/InstancesPage";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -59,11 +59,11 @@ function App() {
           }
         />
 
-        {/* Login */}
+        {/* Login / Registro */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
 
-        {/* Panel administrativo con layout */}
+        {/* Panel administrativo */}
         <Route
           path="/panel/*"
           element={<DashboardLayout onToggleTheme={toggleMode} mode={mode} />}
@@ -72,12 +72,10 @@ function App() {
           <Route path="panel-control" element={<PanelControl />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="campaxa" element={<CampaxaChat />} />
-          <Route path="account" element={<AccountPage />} />
-          <Route path="instances" element={<InstancesPage />} />
         </Route>
       </Routes>
 
-      {/* Overlay global: aparece encima en /panel/panel-control */}
+      {/* Overlay global */}
       {location.pathname === "/panel/panel-control" && (
         <QrWhatsapp
           open={true}
