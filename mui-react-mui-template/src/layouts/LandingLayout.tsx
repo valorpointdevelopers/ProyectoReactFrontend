@@ -1,32 +1,32 @@
 import React from "react";
 import { Link as RouterLink } from "react-router-dom";
 import {
-  AppBar,
-  Toolbar,
-  Box,
-  Button,
-  Link as MUILink,
-  Typography,
-  Stack,
-  IconButton,
-  useTheme,
+  AppBar,
+  Toolbar,
+  Box,
+  Button,
+  Link as MUILink,
+  Typography,
+  Stack,
+  IconButton,
+  useTheme,
 } from "@mui/material";
 import RedeemIcon from "@mui/icons-material/Redeem";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 
 type Props = {
-  children: React.ReactNode;
-  onToggleTheme?: () => void;
-  mode?: "light" | "dark";
+  children: React.ReactNode;
+  onToggleTheme?: () => void;
+  mode?: "light" | "dark";
 };
 
 export default function LandingLayout({ children, onToggleTheme, mode = "light" }: Props) {
-  const theme = useTheme();
-  const isLight = mode !== "dark";
+  const theme = useTheme();
+  const isLight = mode !== "dark";
 
-  return (
-    <Box>
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar
         position="sticky"
         elevation={0}
@@ -38,14 +38,11 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
         }}
       >
         <Toolbar sx={{ minHeight: 72 }}>
-          {/* Logo */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mr: 3 }}>
             <Typography variant="subtitle1" fontWeight={600}>
               Whatsvaa
             </Typography>
           </Box>
-
-          {/* Enlaces centro */}
           <Stack direction="row" spacing={3} sx={{ flexGrow: 1 }}>
             <MUILink component={RouterLink} to="#" underline="none" color="text.primary">
               Política de privacidad
@@ -57,8 +54,6 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
               Contáctanos
             </MUILink>
           </Stack>
-
-          {/* Botón cambio de tema con htmlColor */}
           {onToggleTheme && (
             <IconButton
               onClick={onToggleTheme}
@@ -73,8 +68,6 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
               {isLight ? <DarkModeIcon htmlColor="#000" /> : <LightModeIcon htmlColor="#fff" />}
             </IconButton>
           )}
-
-          {/* Botón a Panel */}
           <Button
             component={RouterLink}
             to="/panel/dashboard"
@@ -86,9 +79,9 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
           </Button>
         </Toolbar>
       </AppBar>
-
-      {/* Contenido */}
-      <Box sx={{ py: { xs: 6, md: 10 } }}>{children}</Box>
+      <Box sx={{ py: { xs: 6, md: 10 }, flexGrow: 1, overflowY: 'auto' }}>
+        {children}
+      </Box>
     </Box>
-  );
+  );
 }

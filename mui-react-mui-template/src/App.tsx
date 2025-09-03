@@ -15,7 +15,9 @@ import baseTheme from "./theme";
 import BandejadeEntrada from "./pages/BandejadeEntrada";
 import CalentadorWhatsapp from "./pages/CalentadorWhatsapp";
 import PanelControl from "./pages/PanelControl";
-import CampaxaChat  from "./pages/CampaxaChat"
+import CampaxaChat from "./pages/CampaxaChat";
+import AccountPage from "./pages/AccountPage";
+import InstancesPage from "./pages/InstancesPage";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -63,7 +65,6 @@ function App() {
         <Route path="/register" element={<SignupForm />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
         
-
         {/* Panel administrativo con layout */}
         <Route
           path="/panel/*"
@@ -76,6 +77,8 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="campaxa" element={<CampaxaChat />} />
+          <Route path="account" element={<AccountPage />} />
+          <Route path="instances" element={<InstancesPage />} />
         </Route>
       </Routes>
     </ThemeProvider>
