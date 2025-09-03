@@ -15,9 +15,8 @@ import baseTheme from "./theme";
 import BandejadeEntrada from "./pages/BandejadeEntrada";
 import CalentadorWhatsapp from "./pages/CalentadorWhatsapp";
 import PanelControl from "./pages/PanelControl";
-import CampaxaChat from "./pages/CampaxaChat";
-import AccountPage from "./pages/AccountPage";
-import InstancesPage from "./pages/InstancesPage";
+import CampaxaChat  from "./pages/CampaxaChat"
+import Api from "./pages/Api";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -77,8 +76,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="campaxa" element={<CampaxaChat />} />
-          <Route path="account" element={<AccountPage />} />
-          <Route path="instances" element={<InstancesPage />} />
+          <Route path="api" element={<Api />} />
         </Route>
       </Routes>
     </ThemeProvider>
