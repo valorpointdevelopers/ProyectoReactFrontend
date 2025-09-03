@@ -2,10 +2,8 @@ import React, { useMemo, useState } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-
 import DashboardLayout from "./layouts/DashboardLayout";
 import LandingLayout from "./layouts/LandingLayout";
-
 import Dashboard from "./pages/Dashboard";
 import SignupForm from "./pages/SignupForm";
 import Login from "./pages/Login";
@@ -15,6 +13,8 @@ import BandejadeEntrada from "./pages/BandejadeEntrada";
 import PanelControl from "./pages/PanelControl";
 import CampaxaChat from "./pages/CampaxaChat";
 import QrWhatsapp from "./pages/QrWhatsapp";
+import Calentador from "./pages/CalentadorWhatsapp";
+import Api from "./pages/Api";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -72,6 +72,8 @@ function App() {
           <Route path="panel-control" element={<PanelControl />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="campaxa" element={<CampaxaChat />} />
+          <Route path="calentador" element={<Calentador />} />
+          <Route path="api" element={<Api />} />
         </Route>
       </Routes>
 

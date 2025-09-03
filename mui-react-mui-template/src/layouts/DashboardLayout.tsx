@@ -434,7 +434,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             label="Bandeja de entrada"
           />
           <NavItem
-            to="calentador"
+            to="/panel/calentador"
             icon={<ChatIcon />}
             label="Calentador de WhatsApp"
           />
