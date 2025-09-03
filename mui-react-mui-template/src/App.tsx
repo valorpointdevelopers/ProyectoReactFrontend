@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -15,13 +15,15 @@ import baseTheme from "./theme";
 import BandejadeEntrada from "./pages/BandejadeEntrada";
 import CalentadorWhatsapp from "./pages/CalentadorWhatsapp";
 import PanelControl from "./pages/PanelControl";
-import CampaxaChat  from "./pages/CampaxaChat";
-import ConstructorFlujos from "./pages/ConstructorFlujos";
-
-
+import CampaxaChat from "./pages/CampaxaChat";
+import Api from "./pages/Api";
+import ConstructorFlujos from "./pages/ConstructorFlujos"
+import InstancesPage from "./pages/InstancesPage"
+import AccountPage from "./pages/AccountPage";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
+  const location = useLocation();
 
   const theme = useMemo(
     () =>
@@ -66,7 +68,6 @@ function App() {
         <Route path="/register" element={<SignupForm />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
         
-
         {/* Panel administrativo con layout */}
         <Route
           path="/panel/*"
@@ -79,8 +80,10 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="campaxa" element={<CampaxaChat />} />
+          <Route path="api" element={<Api />} />
           <Route path="flows" element={<ConstructorFlujos />} />
-
+          <Route path="instances" element={<InstancesPage />} />
+          <Route path="account" element={<AccountPage />} />
         </Route>
       </Routes>
     </ThemeProvider>
