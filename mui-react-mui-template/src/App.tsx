@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -16,14 +16,16 @@ import BandejadeEntrada from "./pages/BandejadeEntrada";
 import CalentadorWhatsapp from "./pages/CalentadorWhatsapp";
 import PanelControl from "./pages/PanelControl";
 import CampaxaChat from "./pages/CampaxaChat";
+import QrWhatsapp from "./pages/QrWhatsapp";
 import Api from "./pages/Api";
-import ConstructorFlujos from "./pages/ConstructorFlujos"
+import ConstructorFlujo from "./pages/ConstrurtorFlujos"
 import InstancesPage from "./pages/InstancesPage"
 import AccountPage from "./pages/AccountPage";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
   const location = useLocation();
+  const navigate = useNavigate();
 
   const theme = useMemo(
     () =>
@@ -81,11 +83,19 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="campaxa" element={<CampaxaChat />} />
           <Route path="api" element={<Api />} />
-          <Route path="flows" element={<ConstructorFlujos />} />
+          <Route path="flows" element={<ConstructorFlujo />} />
           <Route path="instances" element={<InstancesPage />} />
           <Route path="account" element={<AccountPage />} />
         </Route>
       </Routes>
+
+      {/* Overlay global: aparece encima en /panel/panel-control */}
+      {location.pathname === "/panel/panel-control" && (
+        <QrWhatsapp
+          open={true}
+          onClose={() => navigate("/panel/dashboard")} // 👈 al cerrar redirige
+        />
+      )}
     </ThemeProvider>
   );
 }
