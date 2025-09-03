@@ -1,27 +1,34 @@
 import React, { useMemo, useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+
 import DashboardLayout from "./layouts/DashboardLayout";
 import LandingLayout from "./layouts/LandingLayout";
+
 import Dashboard from "./pages/Dashboard";
-import Users from "./pages/Users";
 import SignupForm from "./pages/SignupForm";
-import Phonebook from "./pages/Phonebook";
-import RecuperarContrasena from "./pages/RecuperarContrasena"; 
 import Login from "./pages/Login";
 import WelcomeCard from "./components/WelcomeCard";
 import baseTheme from "./theme";
 import BandejadeEntrada from "./pages/BandejadeEntrada";
-import CalentadorWhatsapp from "./pages/CalentadorWhatsapp";
+
 import PanelControl from "./pages/PanelControl";
-import CampaxaChat  from "./pages/CampaxaChat";
+import CampaxaChat from "./pages/CampaxaChat";
+import QrWhatsapp from "./pages/QrWhatsapp";
+import CalentadorWhatsapp from "./pages/CalentadorWhatsapp";
 import ConstructorFlujos from "./pages/ConstructorFlujos";
-
-
+import Phonebook from "./pages/Phonebook";
+import Users from "./pages/Users";
+import Api from "./pages/Api";
+import AccountPage from "./pages/AccountPage";
+import InstancesPage from "./pages/InstancesPage";
+import RecuperarContrasena from "./pages/RecuperarContrasena";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const theme = useMemo(
     () =>
@@ -61,13 +68,13 @@ function App() {
           }
         />
 
-        {/* Login */}
+        {/* Login / Registro */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
-        
 
-        {/* Panel administrativo con layout */}
+
+        {/* Panel administrativo */}
         <Route
           path="/panel/*"
           element={<DashboardLayout onToggleTheme={toggleMode} mode={mode} />}
@@ -80,9 +87,21 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="campaxa" element={<CampaxaChat />} />
           <Route path="flows" element={<ConstructorFlujos />} />
+          <Route path="api" element={<Api />} />
+          <Route path="account" element={<AccountPage />} />
+          <Route path="instances" element={<InstancesPage />} />
+
 
         </Route>
       </Routes>
+
+      {/* Overlay global */}
+      {location.pathname === "/panel/panel-control" && (
+        <QrWhatsapp
+          open={true}
+          onClose={() => navigate("/panel/dashboard")}
+        />
+      )}
     </ThemeProvider>
   );
 }
