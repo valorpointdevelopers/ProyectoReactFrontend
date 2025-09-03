@@ -16,7 +16,11 @@ import BandejadeEntrada from "./pages/BandejadeEntrada";
 import CalentadorWhatsapp from "./pages/CalentadorWhatsapp";
 import PanelControl from "./pages/PanelControl";
 import CampaxaChat from "./pages/CampaxaChat";
-import QrWhatsapp from "./pages/QrWhatsapp"; // ✅ import correcto
+import QrWhatsapp from "./pages/QrWhatsapp";
+import Api from "./pages/Api";
+import ConstructorFlujo from "./pages/ConstrurtorFlujos"
+import InstancesPage from "./pages/InstancesPage"
+import AccountPage from "./pages/AccountPage";
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -78,6 +82,10 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<Users />} />
           <Route path="campaxa" element={<CampaxaChat />} />
+          <Route path="api" element={<Api />} />
+          <Route path="flows" element={<ConstructorFlujo />} />
+          <Route path="instances" element={<InstancesPage />} />
+          <Route path="account" element={<AccountPage />} />
         </Route>
       </Routes>
 
