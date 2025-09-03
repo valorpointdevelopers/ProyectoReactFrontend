@@ -13,12 +13,8 @@ import BandejadeEntrada from "./pages/BandejadeEntrada";
 import PanelControl from "./pages/PanelControl";
 import CampaxaChat from "./pages/CampaxaChat";
 import QrWhatsapp from "./pages/QrWhatsapp";
+import Calentador from "./pages/CalentadorWhatsapp";
 import Api from "./pages/Api";
-import Instances from "./pages/InstancesPage";
-import InstancesPage from "./pages/InstancesPage";
-import Recuperar from "./pages/RecuperarContrasena";
-
-
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -77,10 +73,8 @@ function App() {
           <Route path="panel-control" element={<PanelControl />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="campaxa" element={<CampaxaChat />} />
+          <Route path="calentador" element={<Calentador />} />
           <Route path="api" element={<Api />} />
-          <Route path="instances" element={<InstancesPage />} />
-          
-
         </Route>
       </Routes>
 
