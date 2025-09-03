@@ -45,10 +45,17 @@ import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+<<<<<<< HEAD
+import DriveFileRenameOutlineIcon from "@mui/icons-material/DriveFileRenameOutline";
+import MailOutlineIcon from "@mui/icons-material/MailOutline";
+import SyncLockIcon from "@mui/icons-material/SyncLock";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+=======
 import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import SyncLockIcon from '@mui/icons-material/SyncLock';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+>>>>>>> origin/develop
 
 interface DashboardLayoutProps {
   onToggleTheme?: () => void;
@@ -96,24 +103,38 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
   };
+<<<<<<< HEAD
+  const handleMenuClose = () => setAnchorEl(null);
+=======
 
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
+>>>>>>> origin/develop
 
   const handleSubscriptionClick = () => {
     handleMenuClose();
     setSubscriptionOpen(true);
   };
+<<<<<<< HEAD
+  const handleSubscriptionClose = () => setSubscriptionOpen(false);
+=======
 
   const handleSubscriptionClose = () => {
     setSubscriptionOpen(false);
   };
+>>>>>>> origin/develop
 
   const handleProfileClick = () => {
     handleMenuClose();
     setProfileOpen(true);
   };
+<<<<<<< HEAD
+  const handleProfileClose = () => setProfileOpen(false);
+
+  const handlePlansClick = () => setPlansOpen(true);
+  const handlePlansClose = () => setPlansOpen(false);
+=======
 
   const handleProfileClose = () => {
     setProfileOpen(false);
@@ -126,12 +147,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const handlePlansClose = () => {
     setPlansOpen(false);
   };
+>>>>>>> origin/develop
 
   const handleViewPlansFromProfile = () => {
     handleProfileClose();
     handlePlansClick();
   };
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/develop
   const handleViewPlansFromSubscription = () => {
     handleSubscriptionClose();
     handlePlansClick();
@@ -141,7 +166,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleLogout = () => {
     handleMenuClose();
+<<<<<<< HEAD
+    navigate("/");
+=======
     navigate('/');
+>>>>>>> origin/develop
   };
 
   const SubscriptionItem = ({ icon, label, value }: any) => {
@@ -163,12 +192,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           ) : isNumber ? (
             <Chip
               label={value}
+<<<<<<< HEAD
+              sx={{ backgroundColor: theme.palette.grey[300], fontWeight: "bold" }}
+=======
               sx={{ backgroundColor: isLight ? theme.palette.grey[300] : theme.palette.grey[800], fontWeight: "bold" }}
+>>>>>>> origin/develop
             />
           ) : isString ? (
             <Chip
               label={value}
+<<<<<<< HEAD
+              sx={{ backgroundColor: theme.palette.grey[300], fontWeight: "bold" }}
+=======
               sx={{ backgroundColor: isLight ? theme.palette.grey[300] : theme.palette.grey[800], fontWeight: "bold" }}
+>>>>>>> origin/develop
             />
           ) : null}
         </Grid>
@@ -177,6 +214,33 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   };
 
   const PlanCard = ({ title, price, oldPrice, days, features }: any) => (
+<<<<<<< HEAD
+    <Card
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "none",
+        border: "1px solid",
+        borderColor: theme.palette.divider,
+      }}
+    >
+      <CardContent sx={{ flexGrow: 1 }}>
+        <Typography variant="h5" align="center" sx={{ fontWeight: "bold" }}>
+          {title}
+        </Typography>
+        <Box sx={{ my: 2, textAlign: "center" }}>
+          <Typography
+            variant="h4"
+            component="span"
+            sx={{ textDecoration: "line-through", color: "gray" }}
+          >
+            {oldPrice}
+          </Typography>
+          <Typography variant="h2" component="span" sx={{ fontWeight: "bold", mx: 1 }}>
+=======
     <Card sx={{ p: 2, borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 'none', border: '1px solid', borderColor: theme.palette.divider }}>
       <CardContent sx={{ flexGrow: 1 }}>
         <Typography variant="h5" align="center" sx={{ fontWeight: 'bold' }}>
@@ -187,6 +251,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {oldPrice}
           </Typography>
           <Typography variant="h2" component="span" sx={{ fontWeight: 'bold', mx: 1 }}>
+>>>>>>> origin/develop
             {price}
           </Typography>
         </Box>
@@ -194,18 +259,30 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           {days} Días
         </Typography>
         {features.map((feature: any, index: any) => (
+<<<<<<< HEAD
+          <Box key={index} sx={{ display: "flex", alignItems: "center", my: 1 }}>
+=======
           <Box key={index} sx={{ display: 'flex', alignItems: 'center', my: 1 }}>
+>>>>>>> origin/develop
             <CheckCircleOutlineIcon color="success" sx={{ mr: 1 }} />
             <Typography variant="body2">{feature}</Typography>
           </Box>
         ))}
       </CardContent>
+<<<<<<< HEAD
+      <CardActions sx={{ justifyContent: "center", p: 2 }}>
+=======
       <CardActions sx={{ justifyContent: 'center', p: 2 }}>
+>>>>>>> origin/develop
         <Button
           variant="contained"
           fullWidth
           sx={{
+<<<<<<< HEAD
+            borderRadius: 1, // corregido
+=======
             borderRadius: "999px",
+>>>>>>> origin/develop
             py: 1.5,
             backgroundColor: "#000",
             "&:hover": {
@@ -285,6 +362,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
+<<<<<<< HEAD
+      <AppBar
+        position="fixed"
+        sx={{
+          zIndex: 1201,
+          borderRadius: 0, // barra sin esquinas ovaladas
+        }}
+      >
+        <Toolbar>
+          <IconButton color="inherit" edge="start" onClick={toggleDrawer} sx={{ mr: 2 }}>
+=======
       <AppBar position="fixed" sx={{ zIndex: 1201 }}>
         <Toolbar>
           <IconButton
@@ -293,6 +381,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             onClick={toggleDrawer}
             sx={{ mr: 2 }}
           >
+>>>>>>> origin/develop
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
@@ -304,14 +393,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               color="inherit"
               sx={{
                 mr: 2,
-                borderRadius: "999px",
-                backgroundColor: isLight
-                  ? theme.palette.grey[200]
-                  : theme.palette.grey[700],
+                borderRadius: 1, // corregido
+                backgroundColor: isLight ? theme.palette.grey[200] : theme.palette.grey[700],
                 "&:hover": {
-                  backgroundColor: isLight
-                    ? theme.palette.grey[300]
-                    : theme.palette.grey[600],
+                  backgroundColor: isLight ? theme.palette.grey[300] : theme.palette.grey[600],
                 },
               }}
             >
@@ -419,6 +504,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       >
         <Toolbar />
         <List>
+<<<<<<< HEAD
+          <NavItem to="panel-control" icon={<DashboardIcon />} label="Panel de control" />
+          <NavItem to="inbox" icon={<ChatIcon />} label="Bandeja de entrada" />
+          <NavItem to="calentador" icon={<ChatIcon />} label="Calentador de WhatsApp" />
+          <NavItem to="contacts" icon={<ContactsIcon />} label="Agenda telefónica" />
+          <NavItem to="/panel/flows" icon={<BuildIcon />} label="Constructor de flujos" />
+          <NavItem to="campaxa" icon={<CampaignIcon />} label="Campañas & Chatbots" />
+          <NavItem to="/panel/api" icon={<ApiIcon />} label="Acceso API" />
+=======
           <NavItem
             to="panel-control"
             icon={<DashboardIcon />}
@@ -453,6 +547,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             to="/panel/api"
             icon={<ApiIcon />}
             label="Acceso API" />
+>>>>>>> origin/develop
         </List>
       </Drawer>
 
@@ -462,6 +557,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </Box>
 
       {/* Modal de Suscripción */}
+<<<<<<< HEAD
+      <Dialog open={subscriptionOpen} onClose={handleSubscriptionClose} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ m: 0, p: 2 }}>
+=======
       <Dialog
         open={subscriptionOpen}
         onClose={handleSubscriptionClose}
@@ -475,6 +574,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         }}
       >
         <DialogTitle sx={{ m: 0, p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+>>>>>>> origin/develop
           <Box display="flex" alignItems="center">
             <Typography variant="h6">Suscripción</Typography>
             <IconButton
@@ -484,7 +584,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 position: "absolute",
                 right: 8,
                 top: 8,
+<<<<<<< HEAD
+                color: (theme) => theme.palette.grey[500],
+=======
                 color: theme.palette.text.secondary,
+>>>>>>> origin/develop
               }}
             >
               <CloseIcon />
@@ -492,6 +596,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Box>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>
+<<<<<<< HEAD
+          <Box
+            sx={{ p: 2, display: "flex", alignItems: "center", backgroundColor: theme.palette.grey[100] }}
+          >
+            <Box component="span" role="img" aria-label="star" sx={{ mr: 1, fontSize: 24 }}>
+=======
           <Box sx={{ p: 2, display: "flex", alignItems: "center", backgroundColor: theme.palette.action.hover }}>
             <Box
               component="span"
@@ -499,6 +609,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               aria-label="star"
               sx={{ mr: 1, fontSize: 24 }}
             >
+>>>>>>> origin/develop
               ⭐
             </Box>
             <Typography variant="body1" sx={{ fontWeight: "bold" }}>
@@ -506,6 +617,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </Typography>
           </Box>
           <Box sx={{ p: 2 }}>
+<<<<<<< HEAD
+            <SubscriptionItem icon={<WhatsAppIcon />} label="Calentador de WhatsApp" value={true} />
+            <SubscriptionItem icon={<WhatsAppIcon />} label="Instancias de WhatsApp" value={99} />
+            <SubscriptionItem icon={<ApiIcon />} label="API de Acceso" value={true} />
+            <SubscriptionItem icon={<AdbIcon />} label="Chatbot" value={true} />
+            <SubscriptionItem icon={<ChatIcon />} label="Notas de chat" value={true} />
+            <SubscriptionItem icon={<ChatIcon />} label="Etiquetas de chat" value={true} />
+            <SubscriptionItem icon={<ContactsIcon />} label="Límite de agenda telefónica" value={999} />
+            <SubscriptionItem icon={<AccessTimeIcon />} label="Días restantes del plan" value="en 2 días" />
+=======
             <SubscriptionItem
               icon={<WhatsAppIcon />}
               label="Calentador de WhatsApp"
@@ -546,6 +667,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               label="Días restantes del plan"
               value="en 2 días"
             />
+>>>>>>> origin/develop
           </Box>
           <Box sx={{ p: 2, pt: 0, textAlign: "center" }}>
             <Button
@@ -553,7 +675,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               fullWidth
               onClick={handleViewPlansFromSubscription}
               sx={{
+<<<<<<< HEAD
+                borderRadius: 1, // corregido
+=======
                 borderRadius: "999px",
+>>>>>>> origin/develop
                 py: 1.5,
                 backgroundColor: "#000",
                 "&:hover": {
@@ -571,6 +697,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       </Dialog>
 
       {/* Modal de Perfil */}
+<<<<<<< HEAD
+      <Dialog open={profileOpen} onClose={handleProfileClose} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ m: 0, p: 2 }}>
+=======
       <Dialog
         open={profileOpen}
         onClose={handleProfileClose}
@@ -584,6 +714,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         }}
       >
         <DialogTitle sx={{ m: 0, p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+>>>>>>> origin/develop
           <Box display="flex" alignItems="center">
             <Typography variant="h6">Perfil</Typography>
             <IconButton
@@ -593,7 +724,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 position: "absolute",
                 right: 8,
                 top: 8,
+<<<<<<< HEAD
+                color: (theme) => theme.palette.grey[500],
+=======
                 color: theme.palette.text.secondary,
+>>>>>>> origin/develop
               }}
             >
               <CloseIcon />
@@ -610,7 +745,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
+<<<<<<< HEAD
+                    <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
+=======
                     <ListItemIcon sx={{ minWidth: 0, mr: 1, color: 'inherit' }}>
+>>>>>>> origin/develop
                       <DriveFileRenameOutlineIcon fontSize="small" />
                     </ListItemIcon>
                   ),
@@ -625,7 +764,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
+<<<<<<< HEAD
+                    <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
+=======
                     <ListItemIcon sx={{ minWidth: 0, mr: 1, color: 'inherit' }}>
+>>>>>>> origin/develop
                       <MailOutlineIcon fontSize="small" />
                     </ListItemIcon>
                   ),
@@ -635,6 +778,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <Grid item xs={12}>
               <TextField
                 fullWidth
+<<<<<<< HEAD
+                label="Contraseña"
+                type="password"
+                defaultValue=""
+                variant="outlined"
+                InputProps={{
+                  startAdornment: (
+                    <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
+=======
                 label="Tu número de móvil"
                 defaultValue=""
                 variant="outlined"
@@ -656,12 +808,58 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 InputProps={{
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1, color: 'inherit' }}>
+>>>>>>> origin/develop
                       <SyncLockIcon fontSize="small" />
                     </ListItemIcon>
                   ),
                 }}
               />
             </Grid>
+<<<<<<< HEAD
+          </Grid>
+          <Box sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 2 }}>
+            <Button
+              variant="contained"
+              fullWidth
+              sx={{
+                borderRadius: 1, // corregido
+                py: 1.5,
+                backgroundColor: "#000",
+                "&:hover": {
+                  backgroundColor: "#333",
+                },
+              }}
+            >
+              Guardar cambios
+            </Button>
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleViewPlansFromProfile}
+              sx={{
+                borderRadius: 1, // corregido
+                py: 1.5,
+                backgroundColor: "#000",
+                "&:hover": {
+                  backgroundColor: "#333",
+                },
+              }}
+            >
+              <Box component="span" role="img" aria-label="star" sx={{ mr: 1 }}>
+                ⭐
+              </Box>
+              VER TODOS LOS PLANES
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Planes */}
+      <Dialog open={plansOpen} onClose={handlePlansClose} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ m: 0, p: 2 }}>
+          <Box display="flex" alignItems="center">
+            <Typography variant="h6">Planes</Typography>
+=======
             <Grid item xs={12}>
               <Typography variant="caption" color="textSecondary">
                 Ignora esto si no quieres cambiar la contraseña
@@ -720,11 +918,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <Box>
               <Typography variant="h6">Planes</Typography>
             </Box>
+>>>>>>> origin/develop
             <IconButton
               aria-label="close"
               onClick={handlePlansClose}
               sx={{
+<<<<<<< HEAD
+                position: "absolute",
+                right: 8,
+                top: 8,
+                color: (theme) => theme.palette.grey[500],
+=======
                 color: theme.palette.text.secondary,
+>>>>>>> origin/develop
               }}
             >
               <CloseIcon />
@@ -732,9 +938,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Box>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 2 }}>
+<<<<<<< HEAD
+          <Grid container spacing={2}>
+            {plans.map((plan, index) => (
+              <Grid item xs={12} md={6} key={index}>
+=======
           <Grid container spacing={4} justifyContent="center" alignItems="stretch">
             {plans.map((plan, index) => (
               <Grid item xs={12} sm={6} md={3} key={index}>
+>>>>>>> origin/develop
                 <PlanCard {...plan} />
               </Grid>
             ))}
@@ -745,4 +957,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   );
 };
 
+<<<<<<< HEAD
 export default DashboardLayout;
+=======
+export default DashboardLayout;
+>>>>>>> origin/develop
