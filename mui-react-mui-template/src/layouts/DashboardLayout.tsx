@@ -430,7 +430,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <Toolbar />
         <List>
           <NavItem
-            to="panel-control"
+            to="dashboard"
             icon={<DashboardIcon />}
             label="Panel de control"
           />

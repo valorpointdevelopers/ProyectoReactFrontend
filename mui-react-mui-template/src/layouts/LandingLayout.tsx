@@ -31,7 +31,7 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
   const [openQR, setOpenQR] = useState(false);
 
   useEffect(() => {
-    if (location.pathname.startsWith("/panel/panel-control")) {
+    if (location.pathname.startsWith("/panel/dashboard")) {
       setOpenQR(true);
     } else {
       setOpenQR(false);
@@ -87,7 +87,7 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
           )}
           <Button
             component={RouterLink}
-            to="/panel/panel-control"
+            to="/panel/dashboard"
             variant="contained"
             startIcon={<RedeemIcon />}
             sx={{
