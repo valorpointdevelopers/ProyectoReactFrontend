@@ -30,7 +30,7 @@ import {
   Alert,
   Menu,
   MenuItem,
-  Stack
+  Stack,
 } from "@mui/material"
 import DeleteIcon from "@mui/icons-material/Delete"
 import DownloadIcon from "@mui/icons-material/Download"
@@ -204,12 +204,12 @@ const AddContactDialog: React.FC<AddContactDialogProps> = ({ open, agenda, onClo
               InputProps={{ startAdornment: <InputAdornment position="start">+</InputAdornment> }}
               fullWidth
             />
-            <Stack direction="row" spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField label="var1" value={vars.var1} onChange={e => setVars({ ...vars, var1: e.target.value })} fullWidth />
               <TextField label="var2" value={vars.var2} onChange={e => setVars({ ...vars, var2: e.target.value })} fullWidth />
               <TextField label="var3" value={vars.var3} onChange={e => setVars({ ...vars, var3: e.target.value })} fullWidth />
             </Stack>
-            <Stack direction="row" spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField label="var4" value={vars.var4} onChange={e => setVars({ ...vars, var4: e.target.value })} fullWidth />
               <TextField label="var5" value={vars.var5} onChange={e => setVars({ ...vars, var5: e.target.value })} fullWidth />
             </Stack>
@@ -221,7 +221,7 @@ const AddContactDialog: React.FC<AddContactDialogProps> = ({ open, agenda, onClo
             <Typography variant="body2">
               Sube un CSV con cabeceras: <b>name, phone</b> (opcional: var1..var5).
             </Typography>
-            <Stack direction="row" spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-start">
               <Button variant="outlined" startIcon={<DownloadIcon />} onClick={downloadTemplate}>
                 Descargar plantilla
               </Button>
@@ -443,31 +443,29 @@ const Phonebook: React.FC = () => {
   }
 
   return (
-    <Box display="flex" gap={3} sx={{ height: "100vh" }}>
+    <Box sx={{ display: "flex", flexDirection: { xs: "column", lg: "row" }, gap: 2, p: { xs: 1, sm: 2 }, minHeight: "100vh", boxSizing: "border-box" }}>
       {/* Panel lateral izquierdo */}
       <Card
         sx={{
-          width: 260,
+          width: { xs: "100%", lg: 280 },
           flexShrink: 0,
-          display: "flex",
-          flexDirection: "column",
           p: 2,
-          height: "100%",
         }}
       >
         <CardContent
           sx={{
-            flex: 1,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
           }}
         >
           <Box
             component="img"
             src={phonebookImg}
             alt="Agenda telefónica"
-            sx={{ width: "100%", height: "auto", borderRadius: 2, mb: 2 }}
+            sx={{ width: "100%", maxWidth: "200px", height: "auto", borderRadius: 2, mb: 2 }}
           />
           <Typography variant="h6" align="center">
             Agenda telefónica
@@ -488,14 +486,14 @@ const Phonebook: React.FC = () => {
       </Card>
 
       {/* Contenido principal */}
-      <Box flex={1} display="flex" flexDirection="column" gap={2} sx={{ height: "100%" }}>
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
         {/* Sección 1: Agregar agenda */}
         <Card>
           <CardContent>
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               Agregar agenda telefónica
             </Typography>
-            <Box display="flex" alignItems="center" gap={2}>
+            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
               <TextField
                 label="Ingrese título de la agenda telefónica"
                 value={newAgendaTitle}
@@ -565,16 +563,15 @@ const Phonebook: React.FC = () => {
 
         {/* Sección 3: Lista de contactos */}
         <Card sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          <Toolbar sx={{ justifyContent: "space-between" }}>
+          <Toolbar sx={{ justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
             <Typography variant="subtitle1">
               Lista de contactos {selectedIds.size > 0 ? `(${selectedIds.size} seleccionados)` : ""}
             </Typography>
-            <div>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
               <Button
                 startIcon={<DownloadIcon />}
                 onClick={e => setExportAnchor(e.currentTarget)}
                 variant="outlined"
-                sx={{ mr: 1 }}
               >
                 EXPORT
               </Button>
@@ -609,11 +606,11 @@ const Phonebook: React.FC = () => {
                   Imprimir
                 </MenuItem>
               </Menu>
-            </div>
+            </Box>
           </Toolbar>
           <Divider />
 
-          <Box flex={1} display="flex" flexDirection="column">
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <TableContainer component={Paper} sx={{ flex: 1 }}>
               <Table id="contacts-table" stickyHeader>
                 <TableHead>
@@ -642,7 +639,7 @@ const Phonebook: React.FC = () => {
                   {paged.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={11} align="center">
-                        No rows
+                        No hay contactos para mostrar.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -689,6 +686,7 @@ const Phonebook: React.FC = () => {
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={handleChangeRowsPerPage}
               rowsPerPageOptions={[10, 25, 50, 100]}
+              labelRowsPerPage="Filas por página:"
             />
           </Box>
         </Card>
