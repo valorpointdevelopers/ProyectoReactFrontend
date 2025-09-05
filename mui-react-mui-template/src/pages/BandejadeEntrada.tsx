@@ -9,6 +9,7 @@ import {
   IconButton,
   Paper,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
@@ -19,26 +20,31 @@ const BandejaEntrada: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   return (
     <Box
       display="flex"
       height="100vh"
-      width="100vw"
+      width="100%"
       bgcolor={theme.palette.background.default}
       overflow="hidden"
+      sx={{ flexDirection: { xs: "column", sm: "row" } }}
     >
       {/* Panel lateral izquierdo */}
       <Paper
         elevation={1}
         sx={{
-          width: "300px",
+          width: { xs: "100%", sm: "300px" },
           p: 2,
           borderRight: `1px solid ${theme.palette.divider}`,
           bgcolor: theme.palette.background.paper,
           display: "flex",
           flexDirection: "column",
-          height: "100vh",
+          
+          height: { xs: "auto", sm: "100vh" },
           boxSizing: "border-box",
+          flexShrink: 0,
         }}
       >
         {/* Buscador */}
@@ -59,7 +65,12 @@ const BandejaEntrada: React.FC = () => {
         </Box>
 
         {/* Botones de búsqueda */}
-        <Box display="flex" gap={1} mb={2}>
+        <Box 
+          display="flex" 
+          gap={1} 
+          mb={2}
+          sx={{ flexDirection: { xs: "column", sm: "row" } }}
+        >
           <TextField
             variant="outlined"
             size="small"
@@ -88,8 +99,8 @@ const BandejaEntrada: React.FC = () => {
             <EventIcon />
           </IconButton>
         </Box>
-
-        <Box flex={1} />
+        
+        <Box flex={1} /> 
       </Paper>
 
       {/* Panel derecho */}
@@ -102,6 +113,7 @@ const BandejaEntrada: React.FC = () => {
         bgcolor={theme.palette.background.default}
         color={theme.palette.text.primary}
         height="100vh"
+        sx={{ display: { xs: "none", sm: "flex" } }}
       >
         <img
           src={welcomeCats}
@@ -109,7 +121,7 @@ const BandejaEntrada: React.FC = () => {
           style={{
             width: "200px",
             marginBottom: "16px",
-            filter: isDark ? "invert(1)" : "none", // 👈 invierte logo si hay modo oscuro
+            filter: isDark ? "invert(1)" : "none",
           }}
         />
         <Typography

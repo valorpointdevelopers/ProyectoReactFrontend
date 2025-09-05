@@ -474,9 +474,9 @@ const FlowBuilder: React.FC = () => {
 
   // --- RENDER ---
   return (
-    <Box sx={{ display: "flex", height: "calc(100vh - 100px)", gap: 2 }}>
+    <Box sx={{ display: "flex", flexDirection: { xs: "column", lg: "row" }, minHeight: "calc(100vh - 100px)", gap: 2, p: { xs: 1, sm: 2 } }}>
       {/* PANEL IZQUIERDO */}
-      <Paper elevation={3} sx={{ width: 280, p: 2, display: "flex", flexDirection: "column", gap: 2, alignItems: "center" }}>
+      <Paper elevation={3} sx={{ width: { xs: "100%", lg: 280 }, p: 2, display: "flex", flexDirection: "column", gap: 2, alignItems: "center", flexShrink: 0 }}>
         <Box component="img" src={flo} alt="Ilustración" sx={{ width: "85%", maxWidth: 190, mt: 1 }} />
 
         <Typography variant="body1" sx={{ textAlign: "center", fontWeight: 500 }}>
@@ -495,9 +495,9 @@ const FlowBuilder: React.FC = () => {
       </Paper>
 
       {/* Área principal */}
-      <Box sx={{ flex: 1, position: "relative", borderRadius: 2, bgcolor: theme.palette.background.paper, overflow: "hidden" }}>
+      <Box sx={{ flex: 1, position: "relative", borderRadius: 2, bgcolor: theme.palette.background.paper, overflow: "hidden", minHeight: { xs: "70vh", lg: "auto" } }}>
         {showTemplates ? (
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
               <DescriptionIcon />
               <Typography variant="h6">Lista de plantillas guardadas</Typography>
@@ -552,8 +552,25 @@ const FlowBuilder: React.FC = () => {
             <Box sx={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(100,100,100,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(100,100,100,0.12) 1px, transparent 1px)", backgroundSize: "20px 20px", zIndex: 0 }} />
 
             {/* Barra de título */}
-            <Paper elevation={1} sx={{ position: "absolute", top: 12, left: 12, zIndex: 4, px: 2, py: 1, display: "flex", alignItems: "center", gap: 1, maxWidth: 540, borderRadius: 2 }}>
-              <TextField value={title} onChange={(e) => setTitle(e.target.value)} variant="standard" sx={{ minWidth: 160, flex: 1 }} inputProps={{ "aria-label": "Título del flujo" }} />
+            <Paper
+              elevation={1}
+              sx={{
+                position: "absolute",
+                top: { xs: 8, sm: 12 },
+                left: { xs: 8, sm: 12 },
+                right: { xs: 8, sm: "auto" },
+                zIndex: 4,
+                px: { xs: 1, sm: 2 },
+                py: 1,
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: "center",
+                gap: 1,
+                maxWidth: 540,
+                borderRadius: 2,
+              }}
+            >
+              <TextField value={title} onChange={(e) => setTitle(e.target.value)} variant="standard" sx={{ minWidth: 160, flex: 1, width: "100%" }} inputProps={{ "aria-label": "Título del flujo" }} />
               <Tooltip title="Guardar flujo como plantilla" arrow>
                 <IconButton color="primary" onClick={handleSaveFlowAsTemplate}>
                   <SaveIcon />
@@ -754,7 +771,7 @@ const FlowBuilder: React.FC = () => {
             </Box>
 
             {/* Menú flotante (+) */}
-            <Box onMouseEnter={() => setMenuOpen(true)} onMouseLeave={() => setMenuOpen(false)} sx={{ position: "absolute", top: "50%", right: 16, transform: "translateY(-50%)", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, zIndex: 7 }}>
+            <Box onMouseEnter={() => setMenuOpen(true)} onMouseLeave={() => setMenuOpen(false)} sx={{ position: "absolute", top: "50%", right: { xs: 8, sm: 16 }, transform: "translateY(-50%)", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, zIndex: 7 }}>
               {menuOpen &&
                 optionDefs.map((opt, idx) => (
                   <Zoom in={menuOpen} key={opt.label} style={{ transitionDelay: `${idx * 50}ms` }}>
@@ -773,7 +790,7 @@ const FlowBuilder: React.FC = () => {
       </Box>
 
       {/* Drawer derecho */}
-      <Drawer anchor="right" open={flowsDrawer} onClose={toggleFlowsDrawer} sx={{ "& .MuiDrawer-paper": { width: 340, p: 2 } }}>
+      <Drawer anchor="right" open={flowsDrawer} onClose={toggleFlowsDrawer} sx={{ "& .MuiDrawer-paper": { width: { xs: "85vw", sm: 340 }, p: 2 } }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
           <ListAltIcon />
           <Typography variant="h6">Lista de flujos</Typography>
@@ -822,7 +839,7 @@ const FlowBuilder: React.FC = () => {
           {["Imagen", "Video", "Audio", "Documento"].includes(String(dialogOption)) && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <Typography variant="body2" color="text.secondary">Selecciona un archivo para {String(dialogOption).toLowerCase()}.</Typography>
-              <Stack direction="row" spacing={1} alignItems="center">
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "flex-start", sm: "center" }}>
                 <Button variant="outlined" sx={{ textTransform: "none", bgcolor: theme.palette.action.hover, opacity: 0.95 }} onClick={() => { if (dialogOption === "Imagen") triggerImagePicker(); if (dialogOption === "Video") triggerVideoPicker(); if (dialogOption === "Audio") triggerAudioPicker(); if (dialogOption === "Documento") triggerDocPicker(); }}>
                   {dialogOption === "Imagen" ? "Subir imagen" : dialogOption === "Video" ? "Subir video" : dialogOption === "Audio" ? "Subir audio" : "Subir documento"}
                 </Button>
@@ -838,7 +855,7 @@ const FlowBuilder: React.FC = () => {
 
           {/* UBICACIÓN */}
           {dialogOption === "Ubicación" && (
-            <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
+            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2, mt: 1 }}>
               <TextField label="Latitud" value={lat} onChange={(e) => setLat(e.target.value)} fullWidth type="number" />
               <TextField label="Longitud" value={lng} onChange={(e) => setLng(e.target.value)} fullWidth type="number" />
             </Box>
@@ -862,7 +879,7 @@ const FlowBuilder: React.FC = () => {
           <Divider sx={{ mt: 2, mb: 1 }} />
           <Typography variant="subtitle2">Claves de respuesta</Typography>
           <Box sx={{ mt: 1, mb: 1 }}>
-            <Stack direction="row" spacing={1} flexWrap="wrap">{keywords.map((k) => <Chip key={k} label={k} onDelete={() => removeKeyword(k)} />)}</Stack>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>{keywords.map((k) => <Chip key={k} label={k} onDelete={() => removeKeyword(k)} />)}</Stack>
           </Box>
           <Stack direction="row" spacing={1} alignItems="center">
             <TextField placeholder="Clave de respuesta" value={claveInput} onChange={(e) => setClaveInput(e.target.value)} fullWidth size="small" />

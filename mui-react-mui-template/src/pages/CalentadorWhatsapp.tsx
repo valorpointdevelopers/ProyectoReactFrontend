@@ -26,9 +26,7 @@ interface Message {
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export const CalentadorWhatsapp = () => {
-  const [messages, setMessages] = useState<Message[]>([
-  ]);
-
+  const [messages, setMessages] = useState<Message[]>([]);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">(
     "idle"
   );
@@ -82,6 +80,7 @@ export const CalentadorWhatsapp = () => {
     <Box
       sx={{
         display: "flex",
+        flexDirection: { xs: "column", md: "row" }, // columna en móvil, fila en desktop
         p: 3,
         minHeight: "100vh",
         bgcolor: "background.default",
@@ -89,10 +88,10 @@ export const CalentadorWhatsapp = () => {
         gap: 4,
       }}
     >
-
+      {/* Panel lateral con imagen */}
       <Box
         sx={{
-          width: "300px",
+          width: { xs: "100%", md: "300px" }, // ancho completo en móvil
           display: "flex",
           flexDirection: "column",
           gap: 2,
@@ -119,11 +118,13 @@ export const CalentadorWhatsapp = () => {
             variant="body2"
             sx={{ textAlign: "center", fontWeight: "bold" }}
           >
-            Calentar su WhatsApp antes de enviar una campaña o mensaje de texto con el Calentador es la mejor manera de reducir el riesgo de ser baneado.
+            Calentar su WhatsApp antes de enviar una campaña o mensaje de texto con
+            el Calentador es la mejor manera de reducir el riesgo de ser baneado.
           </Typography>
         </Paper>
       </Box>
 
+      {/* Contenido principal */}
       <Box sx={{ flexGrow: 1 }}>
         <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 2 }}>
           Agregar mensajes de script de calentamiento
@@ -134,7 +135,7 @@ export const CalentadorWhatsapp = () => {
         <Paper
           elevation={2}
           sx={{
-            p: 3,
+            p: { xs: 2, md: 3 },
             display: "flex",
             flexDirection: "column",
             gap: 2,
@@ -193,11 +194,20 @@ export const CalentadorWhatsapp = () => {
             />
           ))}
 
-          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              justifyContent: "flex-end",
+              gap: 2,
+              mt: 2,
+            }}
+          >
             <Button
               variant="outlined"
               startIcon={<AddCircleOutlineIcon />}
               onClick={handleAddMessage}
+              sx={{ width: { xs: "100%", sm: "auto" } }} // ancho completo en móvil
             >
               Añadir Mensaje
             </Button>
@@ -214,6 +224,7 @@ export const CalentadorWhatsapp = () => {
               }
               onClick={handleSaveScript}
               disabled={isSaving || editingId !== null}
+              sx={{ width: { xs: "100%", sm: "auto" } }} // ancho completo en móvil
             >
               {isSaving ? "Guardando..." : "ENVIAR MENSAJE"}
             </Button>
