@@ -15,11 +15,12 @@ import {
   List,
   ListItem,
   ListItemButton,
-  ListItemIcon,
   ListItemText,
+  ListItemIcon,
   Tabs,
   Tab,
-  useTheme, // <-- Importado para acceder al tema
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -35,6 +36,14 @@ import DescriptionIcon from '@mui/icons-material/Description';
 // Importa la imagen del token
 import TokenImage from "../images/token.png";
 
+// Funciones de accesibilidad para las pestañas
+function a11yProps(index: number) {
+  return {
+    id: `api-tab-${index}`,
+    'aria-controls': `api-tabpanel-${index}`,
+  };
+}
+
 // Este componente simula la generación de un token API
 const generateToken = () => {
   const token = Math.random().toString(36).substring(2) +
@@ -48,7 +57,8 @@ const GenerateTokenSection = () => {
   const [token, setToken] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
-  const theme = useTheme(); // <-- Usando el hook useTheme
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
 
   const handleGenerateToken = () => {
     setLoading(true);
@@ -65,15 +75,13 @@ const GenerateTokenSection = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isDarkMode = theme.palette.mode === 'dark';
-
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>
         Gestión de Tokens API
       </Typography>
       <Typography variant="body1" align="center" sx={{ mb: 4, color: theme.palette.text.secondary }}>
-        Utiliza tokens de para automatizar tareas y conectar tus servicios.
+        Utiliza tokens para automatizar tareas y conectar tus servicios.
       </Typography>
 
       <Box sx={{ textAlign: 'center', mb: 4 }}>
@@ -149,298 +157,285 @@ const GenerateTokenSection = () => {
   );
 };
 
-// Componente para la sección de "Método GET"
 const GetMethodSection = () => {
   const [tabValue, setTabValue] = React.useState(0);
-  const theme = useTheme(); // <-- Usando el hook useTheme
+  const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (event: any, newValue: React.SetStateAction<number>) => {
     setTabValue(newValue);
   };
 
-  const renderTabContent = (tabIndex: number) => {
-    const commonStyles = {
-      p: 2,
-      mb: 3,
-      backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8',
-      borderRadius: '8px',
-    };
-
-    const urlStyle = {
-      color: isDarkMode ? theme.palette.info.light : '#4e89ae',
-      fontWeight: 'bold',
-      overflowWrap: 'break-word',
-      fontFamily: 'monospace'
-    };
-
-    const paramStyle = {
-      color: isDarkMode ? theme.palette.warning.light : '#c41151',
-      fontWeight: 'bold',
-    };
-
-    const successStyle = { ...commonStyles, borderLeft: '4px solid #4caf50' };
-    const failedStyle = { ...commonStyles, borderLeft: '4px solid #f44336' };
-    const codeStyle = { fontFamily: 'monospace', color: theme.palette.text.primary };
-
-    switch (tabIndex) {
-      case 0:
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              1. Send a GET request to
+  const tabContents = [
+    {
+      title: "MENSAJE DE TEXTO",
+      icon: <ChatBubbleOutlineIcon />,
+      content: (
+        <>
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            1. Send a GET request to
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #4e89ae' }}>
+            <Typography variant="body2" sx={{ color: isDarkMode ? theme.palette.info.light : '#4e89ae', fontWeight: 'bold', overflowWrap: 'break-word', fontFamily: 'monospace' }}>
+              http://localhost:8022/api/v1/send-text?token=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>TOKEN_HERE</span>&instance_id=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>ID</span>&jid=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>JID</span>&msg=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>HELLO</span>
             </Typography>
-            <Paper elevation={1} sx={{ ...commonStyles, borderLeft: '4px solid #4e89ae' }}>
-              <Typography variant="body2" sx={urlStyle}>
-                http://localhost:8022/api/v1/send-text?token=<span style={paramStyle}>TOKEN_HERE</span>&instance_id=<span style={paramStyle}>ID</span>&jid=<span style={paramStyle}>JID</span>&msg=<span style={paramStyle}>HELLO</span>
-              </Typography>
-            </Paper>
+          </Paper>
 
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              2. Indicators
-            </Typography>
-            <Paper elevation={1} sx={{ ...commonStyles, borderLeft: '4px solid #fcef00ff' }}>
-              <Box component="ul" sx={{ pl: 2, mb: 0, listStyleType: 'none', color: theme.palette.text.secondary }}>
-                <li><Typography variant="body2"><span style={paramStyle}>token</span> = your token,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>msg</span> = your text message,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>instance_id</span> = instance ID,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>jid</span> = 91999999999@s.whatsapp.net</Typography></li>
-              </Box>
-            </Paper>
-            
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              3. Success response
-            </Typography>
-            <Paper elevation={1} sx={successStyle}>
-              <Typography variant="body2" component="pre" sx={codeStyle}>
-                {`{
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            2. Indicators
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #fcef00ff' }}>
+            <Box component="ul" sx={{ pl: 2, mb: 0, listStyleType: 'none', color: theme.palette.text.secondary }}>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>token</span> = your token,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>msg</span> = your text message,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>instance_id</span> = instance ID,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>jid</span> = 91999999999@s.whatsapp.net</Typography></li>
+            </Box>
+          </Paper>
+
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            3. Success response
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>
+            <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', color: theme.palette.text.primary }}>
+              {`{
   "success": true,
   "message": "Message sent successfully!",
   "response": "<RESPONSE>"
 }`}
-              </Typography>
-            </Paper>
-
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              4. Failed response
             </Typography>
-            <Paper elevation={1} sx={failedStyle}>
-              <Typography variant="body2" component="pre" sx={codeStyle}>
-                {`{
+          </Paper>
+
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            4. Failed response
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #f44336' }}>
+            <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', color: theme.palette.text.primary }}>
+              {`{
   "success": false,
   "message": "<REASON>"
 }`}
-              </Typography>
-            </Paper>
-          </Box>
-        );
-      case 1:
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              1. Send a GET request to
             </Typography>
-            <Paper elevation={1} sx={{ ...commonStyles, borderLeft: '4px solid #4e89ae' }}>
-              <Typography variant="body2" sx={urlStyle}>
-                http://localhost:8022/api/v1/send-image?token=<span style={paramStyle}>TOKEN_HERE</span>&instance_id=<span style={paramStyle}>ID</span>&jid=<span style={paramStyle}>JID</span>&caption=<span style={paramStyle}>CAPTION</span>&imageurl=<span style={paramStyle}>IMAGEURL</span>
-              </Typography>
-            </Paper>
+          </Paper>
+        </>
+      ),
+    },
+    {
+      title: "ENVIAR IMAGEN",
+      icon: <ImageIcon />,
+      content: (
+        <>
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            1. Send a GET request to
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #4e89ae' }}>
+            <Typography variant="body2" sx={{ color: isDarkMode ? theme.palette.info.light : '#4e89ae', fontWeight: 'bold', overflowWrap: 'break-word', fontFamily: 'monospace' }}>
+              http://localhost:8022/api/v1/send-image?token=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>TOKEN_HERE</span>&instance_id=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>ID</span>&jid=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>JID</span>&caption=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>CAPTION</span>&imageurl=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>IMAGEURL</span>
+            </Typography>
+          </Paper>
 
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              2. Indicators
-            </Typography>
-            <Paper elevation={1} sx={{ ...commonStyles, borderLeft: '4px solid #fcef00ff' }}>
-              <Box component="ul" sx={{ pl: 2, mb: 0, listStyleType: 'none', color: theme.palette.text.secondary }}>
-                <li><Typography variant="body2"><span style={paramStyle}>token</span> = your token,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>caption</span> = your image caption message,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>instance_id</span> = instance ID,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>jid</span> = 91999999999@s.whatsapp.net,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>imageurl</span> = https://someimage.com/image.jpg</Typography></li>
-              </Box>
-            </Paper>
-            
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              3. Success response
-            </Typography>
-            <Paper elevation={1} sx={successStyle}>
-              <Typography variant="body2" component="pre" sx={codeStyle}>
-                {`{
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            2. Indicators
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #fcef00ff' }}>
+            <Box component="ul" sx={{ pl: 2, mb: 0, listStyleType: 'none', color: theme.palette.text.secondary }}>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>token</span> = your token,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>caption</span> = your image caption message,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>instance_id</span> = instance ID,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>jid</span> = 91999999999@s.whatsapp.net,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>imageurl</span> = https://someimage.com/image.jpg</Typography></li>
+            </Box>
+          </Paper>
+
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            3. Success response
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>
+            <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', color: theme.palette.text.primary }}>
+              {`{
   "success": true,
   "message": "Message sent successfully!",
   "response": "<RESPONSE>"
 }`}
-              </Typography>
-            </Paper>
-
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              4. Failed response
             </Typography>
-            <Paper elevation={1} sx={failedStyle}>
-              <Typography variant="body2" component="pre" sx={codeStyle}>
-                {`{
+          </Paper>
+
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            4. Failed response
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #f44336' }}>
+            <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', color: theme.palette.text.primary }}>
+              {`{
   "success": false,
   "message": "<REASON>"
 }`}
-              </Typography>
-            </Paper>
-          </Box>
-        );
-      case 2:
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              1. Send a GET request to
             </Typography>
-            <Paper elevation={1} sx={{ ...commonStyles, borderLeft: '4px solid #4e89ae' }}>
-              <Typography variant="body2" sx={urlStyle}>
-                http://localhost:8022/api/v1/send-video?token=<span style={paramStyle}>TOKEN_HERE</span>&instance_id=<span style={paramStyle}>ID</span>&jid=<span style={paramStyle}>JID</span>&caption=<span style={paramStyle}>CAPTION</span>&videourl=<span style={paramStyle}>VIDEOURL</span>
-              </Typography>
-            </Paper>
+          </Paper>
+        </>
+      ),
+    },
+    {
+      title: "ENVIAR VIDEO",
+      icon: <VideocamIcon />,
+      content: (
+        <>
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            1. Send a GET request to
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #4e89ae' }}>
+            <Typography variant="body2" sx={{ color: isDarkMode ? theme.palette.info.light : '#4e89ae', fontWeight: 'bold', overflowWrap: 'break-word', fontFamily: 'monospace' }}>
+              http://localhost:8022/api/v1/send-video?token=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>TOKEN_HERE</span>&instance_id=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>ID</span>&jid=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>JID</span>&caption=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>CAPTION</span>&videourl=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>VIDEOURL</span>
+            </Typography>
+          </Paper>
 
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              2. Indicators
-            </Typography>
-            <Paper elevation={1} sx={{ ...commonStyles, borderLeft: '4px solid #fcef00ff' }}>
-              <Box component="ul" sx={{ pl: 2, mb: 0, listStyleType: 'none', color: theme.palette.text.secondary }}>
-                <li><Typography variant="body2"><span style={paramStyle}>token</span> = your token,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>caption</span> = your video caption message,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>instance_id</span> = instance ID,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>jid</span> = 91999999999@s.whatsapp.net,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>videourl</span> = https://someimage.com/video.mp4</Typography></li>
-              </Box>
-            </Paper>
-            
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              3. Success response
-            </Typography>
-            <Paper elevation={1} sx={successStyle}>
-              <Typography variant="body2" component="pre" sx={codeStyle}>
-                {`{
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            2. Indicators
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #fcef00ff' }}>
+            <Box component="ul" sx={{ pl: 2, mb: 0, listStyleType: 'none', color: theme.palette.text.secondary }}>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>token</span> = your token,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>caption</span> = your video caption message,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>instance_id</span> = instance ID,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>jid</span> = 91999999999@s.whatsapp.net,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>videourl</span> = https://someimage.com/video.mp4</Typography></li>
+            </Box>
+          </Paper>
+
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            3. Success response
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>
+            <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', color: theme.palette.text.primary }}>
+              {`{
   "success": true,
   "message": "Message sent successfully!",
   "response": "<RESPONSE>"
 }`}
-              </Typography>
-            </Paper>
-
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              4. Failed response
             </Typography>
-            <Paper elevation={1} sx={failedStyle}>
-              <Typography variant="body2" component="pre" sx={codeStyle}>
-                {`{
+          </Paper>
+
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            4. Failed response
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #f44336' }}>
+            <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', color: theme.palette.text.primary }}>
+              {`{
   "success": false,
   "message": "<REASON>"
 }`}
-              </Typography>
-            </Paper>
-          </Box>
-        );
-      case 3:
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              1. Send a GET request to
             </Typography>
-            <Paper elevation={1} sx={{ ...commonStyles, borderLeft: '4px solid #4e89ae' }}>
-              <Typography variant="body2" sx={urlStyle}>
-                http://localhost:8022/api/v1/send-audio?token=<span style={paramStyle}>TOKEN_HERE</span>&instance_id=<span style={paramStyle}>ID</span>&jid=<span style={paramStyle}>JID</span>&audiourl=<span style={paramStyle}>AUDIOURL</span>
-              </Typography>
-            </Paper>
+          </Paper>
+        </>
+      ),
+    },
+    {
+      title: "ENVIAR AUDIO",
+      icon: <AudiotrackIcon />,
+      content: (
+        <>
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            1. Send a GET request to
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #4e89ae' }}>
+            <Typography variant="body2" sx={{ color: isDarkMode ? theme.palette.info.light : '#4e89ae', fontWeight: 'bold', overflowWrap: 'break-word', fontFamily: 'monospace' }}>
+              http://localhost:8022/api/v1/send-audio?token=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>TOKEN_HERE</span>&instance_id=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>ID</span>&jid=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>JID</span>&audiourl=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>AUDIOURL</span>
+            </Typography>
+          </Paper>
 
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              2. Indicators
-            </Typography>
-            <Paper elevation={1} sx={{ ...commonStyles, borderLeft: '4px solid #fcef00ff' }}>
-              <Box component="ul" sx={{ pl: 2, mb: 0, listStyleType: 'none', color: theme.palette.text.secondary }}>
-                <li><Typography variant="body2"><span style={paramStyle}>token</span> = your token,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>instance_id</span> = instance ID,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>jid</span> = 91999999999@s.whatsapp.net,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>audiourl</span> = https://someimage.com/audio.mp3</Typography></li>
-              </Box>
-            </Paper>
-            
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              3. Success response
-            </Typography>
-            <Paper elevation={1} sx={successStyle}>
-              <Typography variant="body2" component="pre" sx={codeStyle}>
-                {`{
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            2. Indicators
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #fcef00ff' }}>
+            <Box component="ul" sx={{ pl: 2, mb: 0, listStyleType: 'none', color: theme.palette.text.secondary }}>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>token</span> = your token,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>instance_id</span> = instance ID,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>jid</span> = 91999999999@s.whatsapp.net,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>audiourl</span> = https://someimage.com/audio.mp3</Typography></li>
+            </Box>
+          </Paper>
+
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            3. Success response
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>
+            <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', color: theme.palette.text.primary }}>
+              {`{
   "success": true,
   "message": "Message sent successfully!",
   "response": "<RESPONSE>"
 }`}
-              </Typography>
-            </Paper>
-
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              4. Failed response
             </Typography>
-            <Paper elevation={1} sx={failedStyle}>
-              <Typography variant="body2" component="pre" sx={codeStyle}>
-                {`{
+          </Paper>
+
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            4. Failed response
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #f44336' }}>
+            <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', color: theme.palette.text.primary }}>
+              {`{
   "success": false,
   "message": "<REASON>"
 }`}
-              </Typography>
-            </Paper>
-          </Box>
-        );
-      case 4:
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              1. Send a GET request to
             </Typography>
-            <Paper elevation={1} sx={{ ...commonStyles, borderLeft: '4px solid #4e89ae' }}>
-              <Typography variant="body2" sx={urlStyle}>
-                http://localhost:8022/api/v1/send-doc?token=<span style={paramStyle}>TOKEN_HERE</span>&instance_id=<span style={paramStyle}>ID</span>&jid=<span style={paramStyle}>JID</span>&caption=<span style={paramStyle}>CAPTION</span>&docurl=<span style={paramStyle}>DOCURL</span>
-              </Typography>
-            </Paper>
+          </Paper>
+        </>
+      ),
+    },
+    {
+      title: "ENVIAR DOCUMENTO",
+      icon: <DescriptionIcon />,
+      content: (
+        <>
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            1. Send a GET request to
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #4e89ae' }}>
+            <Typography variant="body2" sx={{ color: isDarkMode ? theme.palette.info.light : '#4e89ae', fontWeight: 'bold', overflowWrap: 'break-word', fontFamily: 'monospace' }}>
+              http://localhost:8022/api/v1/send-doc?token=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>TOKEN_HERE</span>&instance_id=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>ID</span>&jid=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>JID</span>&caption=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>CAPTION</span>&docurl=<span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>DOCURL</span>
+            </Typography>
+          </Paper>
 
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              2. Indicators
-            </Typography>
-            <Paper elevation={1} sx={{ ...commonStyles, borderLeft: '4px solid #fcef00ff' }}>
-              <Box component="ul" sx={{ pl: 2, mb: 0, listStyleType: 'none', color: theme.palette.text.secondary }}>
-                <li><Typography variant="body2"><span style={paramStyle}>token</span> = your token,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>instance_id</span> = instance ID,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>jid</span> = 91999999999@s.whatsapp.net,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>caption</span> = your caption,</Typography></li>
-                <li><Typography variant="body2"><span style={paramStyle}>docurl</span> = https://someimage.com/somedoc.pdf</Typography></li>
-              </Box>
-            </Paper>
-            
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              3. Success response
-            </Typography>
-            <Paper elevation={1} sx={successStyle}>
-              <Typography variant="body2" component="pre" sx={codeStyle}>
-                {`{
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            2. Indicators
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #fcef00ff' }}>
+            <Box component="ul" sx={{ pl: 2, mb: 0, listStyleType: 'none', color: theme.palette.text.secondary }}>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>token</span> = your token,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>instance_id</span> = instance ID,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>jid</span> = 91999999999@s.whatsapp.net,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>caption</span> = your caption,</Typography></li>
+              <li><Typography variant="body2"><span style={{ color: isDarkMode ? theme.palette.warning.light : '#c41151', fontWeight: 'bold' }}>docurl</span> = https://someimage.com/somedoc.pdf</Typography></li>
+            </Box>
+          </Paper>
+
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            3. Success response
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>
+            <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', color: theme.palette.text.primary }}>
+              {`{
   "success": true,
   "message": "Message sent successfully!",
   "response": "<RESPONSE>"
 }`}
-              </Typography>
-            </Paper>
-
-            <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
-              4. Failed response
             </Typography>
-            <Paper elevation={1} sx={failedStyle}>
-              <Typography variant="body2" component="pre" sx={codeStyle}>
-                {`{
+          </Paper>
+
+          <Typography variant="h6" gutterBottom color={theme.palette.text.primary}>
+            4. Failed response
+          </Typography>
+          <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: isDarkMode ? theme.palette.grey[800] : '#f1f4f8', borderRadius: '8px', borderLeft: '4px solid #f44336' }}>
+            <Typography variant="body2" component="pre" sx={{ fontFamily: 'monospace', color: theme.palette.text.primary }}>
+              {`{
   "success": false,
   "message": "<REASON>"
 }`}
-              </Typography>
-            </Paper>
-          </Box>
-        );
-      default:
-        return <Box sx={{ p: 3 }}>Contenido no disponible para esta opción.</Box>;
-    }
-  };
+            </Typography>
+          </Paper>
+        </>
+      ),
+    },
+  ];
 
   return (
     <Box>
@@ -449,67 +444,41 @@ const GetMethodSection = () => {
       </Typography>
 
       <Box sx={{ borderBottom: 1, borderColor: isDarkMode ? theme.palette.grey[700] : 'divider', mb: 2 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="api request types" variant="fullWidth">
-          <Tab
-            icon={<ChatBubbleOutlineIcon color={tabValue === 0 ? 'primary' : 'inherit'} />}
-            label="MENSAJE DE TEXTO"
-            {...a11yProps(0)}
-            sx={{
-              color: isDarkMode && tabValue !== 0 ? theme.palette.grey[400] : undefined,
-            }}
-          />
-          <Tab
-            icon={<ImageIcon color={tabValue === 1 ? 'primary' : 'inherit'} />}
-            label="ENVIAR IMAGEN"
-            {...a11yProps(1)}
-            sx={{
-              color: isDarkMode && tabValue !== 1 ? theme.palette.grey[400] : undefined,
-            }}
-          />
-          <Tab
-            icon={<VideocamIcon color={tabValue === 2 ? 'primary' : 'inherit'} />}
-            label="ENVIAR VIDEO"
-            {...a11yProps(2)}
-            sx={{
-              color: isDarkMode && tabValue !== 2 ? theme.palette.grey[400] : undefined,
-            }}
-          />
-          <Tab
-            icon={<AudiotrackIcon color={tabValue === 3 ? 'primary' : 'inherit'} />}
-            label="ENVIAR AUDIO"
-            {...a11yProps(3)}
-            sx={{
-              color: isDarkMode && tabValue !== 3 ? theme.palette.grey[400] : undefined,
-            }}
-          />
-          <Tab
-            icon={<DescriptionIcon color={tabValue === 4 ? 'primary' : 'inherit'} />}
-            label="ENVIAR DOCUMENTO"
-            {...a11yProps(4)}
-            sx={{
-              color: isDarkMode && tabValue !== 4 ? theme.palette.grey[400] : undefined,
-            }}
-          />
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          aria-label="api request types"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
+          {tabContents.map((tab, index) => (
+            <Tab
+              key={index}
+              icon={React.cloneElement(tab.icon, { color: tabValue === index ? 'primary' : 'inherit' })}
+              label={tab.title}
+              {...a11yProps(index)}
+              sx={{
+                color: isDarkMode && tabValue !== index ? theme.palette.grey[400] : undefined,
+              }}
+            />
+          ))}
         </Tabs>
       </Box>
-
-      {renderTabContent(tabValue)}
+      
+      <Box sx={{ p: { xs: 1, md: 3 } }}>
+        {tabContents[tabValue].content}
+      </Box>
+      
     </Box>
   );
 };
 
-// Funciones de accesibilidad para las pestañas
-function a11yProps(index: number) {
-  return {
-    id: `api-tab-${index}`,
-    'aria-controls': `api-tabpanel-${index}`,
-  };
-}
-
 const Api = () => {
   const [selectedMenuItem, setSelectedMenuItem] = React.useState("generarToken");
-  const theme = useTheme(); // <-- Usando el hook useTheme
+  const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const renderContent = () => {
     switch (selectedMenuItem) {
@@ -525,11 +494,12 @@ const Api = () => {
   return (
     <Box sx={{
       display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
       minHeight: '100vh',
       backgroundColor: isDarkMode ? theme.palette.background.default : '#f5f7fa',
       color: theme.palette.text.primary,
     }}>
-      {/* Sidebar de navegación */}
+      {/* Sidebar para pantallas grandes */}
       <Paper elevation={1} sx={{
         width: 280,
         flexShrink: 0,
@@ -537,7 +507,7 @@ const Api = () => {
         borderRight: `1px solid ${isDarkMode ? theme.palette.grey[800] : '#e0e0e0'}`,
         p: 2,
         borderRadius: '0',
-        display: 'flex',
+        display: { xs: 'none', md: 'flex' },
         flexDirection: 'column',
       }}>
         <Box sx={{ mb: 4 }}>
@@ -595,11 +565,44 @@ const Api = () => {
         </List>
       </Paper>
 
+      {/* Menú de pestañas para móviles */}
+      <Box sx={{
+        display: { xs: 'block', md: 'none' },
+        width: '100%',
+        borderBottom: `1px solid ${isDarkMode ? theme.palette.grey[700] : 'divider'}`,
+      }}>
+        <Tabs
+          value={selectedMenuItem === "generarToken" ? 0 : 1}
+          onChange={(e, value) => setSelectedMenuItem(value === 0 ? "generarToken" : "metodoGET")}
+          variant="fullWidth"
+          aria-label="mobile navigation"
+        >
+          <Tab
+            icon={<VpnKeyIcon />}
+            label="Token"
+            id="mobile-tab-0"
+            aria-controls="mobile-tabpanel-0"
+            sx={{
+              color: isDarkMode ? theme.palette.text.primary : 'inherit',
+            }}
+          />
+          <Tab
+            icon={<HttpIcon />}
+            label="Método GET"
+            id="mobile-tab-1"
+            aria-controls="mobile-tabpanel-1"
+            sx={{
+              color: isDarkMode ? theme.palette.text.primary : 'inherit',
+            }}
+          />
+        </Tabs>
+      </Box>
+
       {/* Contenido principal */}
-      <Box sx={{ flexGrow: 1, p: 4, overflowY: 'auto' }}>
+      <Box sx={{ flexGrow: 1, p: { xs: 2, md: 4 }, overflowY: 'auto' }}>
         <Grid container spacing={4} justifyContent="center" alignItems="flex-start">
           <Grid item xs={12} md={10}>
-            <Paper elevation={3} sx={{ p: 4, borderRadius: '12px', backgroundColor: isDarkMode ? theme.palette.background.paper : '#ffffff' }}>
+            <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: '12px', backgroundColor: isDarkMode ? theme.palette.background.paper : '#ffffff' }}>
               {renderContent()}
             </Paper>
           </Grid>
