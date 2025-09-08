@@ -24,7 +24,7 @@ import {
   FiCheckCircle,
 } from 'react-icons/fi';
 import { useTheme } from '@mui/material/styles';
-import config from '../config';
+import config from '../config.json'; 
 
 // Interfaz para el estado del formulario
 interface FormDataState {
@@ -107,7 +107,7 @@ const SignupForm: React.FC = () => {
     const { confirmPassword, ...payload } = formData;
 
     try {
-      const response = await fetch(`${config.API_URL}/user/signup`, {
+      const response = await fetch(config.API_URL + 'user/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
