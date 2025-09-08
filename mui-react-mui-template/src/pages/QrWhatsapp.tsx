@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { X, Smartphone, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import QRCode from "react-qr-code";
+
+import config from "../config";
+
 
 export type QrWhatsappProps = {
   open?: boolean;
@@ -168,17 +170,35 @@ const Card: React.FC<React.PropsWithChildren<{ onClose?: () => void; title?: str
 
 export const QrWhatsapp: React.FC<QrWhatsappProps> = ({ open = false, onClose, value, title }) => {
   const [seed] = useState(() => randomToken(16));
+  const [qrValue, setqrValue] = React.useState("");
+  React.useEffect(() => {
 
-  const qrValue = useMemo(() => {
-    if (value) return value;
-    const payload = {
-      v: 1,
-      t: Date.now(),
-      token: seed,
-      hint: "scan-to-link",
-    };
-    return `wa-login:${btoa(JSON.stringify(payload))}`;
-  }, [value, seed]);
+    const payload = async () => {
+      try {
+        const response = await fetch(config.API_URL + 'session/create_qr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+          body: JSON.stringify({ title: 'Default', syncMax: false }),
+        });
+
+        const data = await response.json();
+        console.log(data);
+
+        if (data.success) {
+          localStorage.setItem("sessionId", data.sessionId);
+          setqrValue(data.qr);
+        }
+        else {
+          setqrValue("");
+        }
+
+      } catch (error) {
+        setqrValue("");
+      }
+    }
+    payload();
+
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -196,13 +216,7 @@ export const QrWhatsapp: React.FC<QrWhatsappProps> = ({ open = false, onClose, v
           <Backdrop onClick={onClose} />
           <Card onClose={onClose} title={title}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <QRCode
-                value={qrValue}
-                size={240}
-                level="H"
-                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                viewBox={`0 0 256 256`}
-              />
+              <img src={qrValue}/>
               <p style={{ marginTop: 12, fontSize: 12, color: "#666" }}>
                 Si el código expira, recarga la página.
               </p>
