@@ -8,17 +8,58 @@ import {
   IconButton,
   InputAdornment,
   Link,
-  Paper,
+  Paper,  
   TextField,
   Typography,
   Alert,
   CircularProgress,
   Divider,
-  useTheme, // Importamos useTheme
+  useTheme,
 } from "@mui/material";
+import config from '../config.json';
+
+import QrWhatsapp from "./QrWhatsapp"; // Importado del archivo nuevo
 
 const PanelControl: React.FC = () => {
   const theme = useTheme(); // Obtenemos el tema actual
+  
+  // Lógica para el modal QR, importada del archivo nuevo
+  const [openQR, setOpenQR] = React.useState(false);
+
+React.useEffect(()=>{
+console.log(123456);
+const fetchData = async () => {
+          try {
+             const response = await fetch(config.API_URL+'session/get_instances_with_status', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json', 'Authorization':'Bearer '+ localStorage.getItem('token') },
+         
+        });
+            const jsonData = await response.json();
+           
+             if (jsonData.success) {
+              console.log(jsonData.data.length);
+                if(jsonData.data.length==0){
+                  setOpenQR(true);
+                  console.log(jsonData);
+                }
+                else
+                  setOpenQR(false);
+  
+              }
+              else{
+                  setOpenQR(false);
+              }
+          } catch (err) {
+            console.log(err);
+             setOpenQR(false);
+          } finally {
+             //setOpenQR(false);
+          }
+        };
+fetchData();
+
+},[]);
 
   return (
     <Box 
@@ -41,8 +82,11 @@ const PanelControl: React.FC = () => {
       </Typography>
       <Divider sx={{ mb: 4, bgcolor: theme.palette.divider }} /> {/* Divisor que se adapta al tema */}
 
+      {/* QR que aparece automáticamente, implementado desde el archivo nuevo */}
+      <QrWhatsapp open={openQR} onClose={() => setOpenQR(false)} />
+
       <Grid container spacing={4}>
-        {/* Sección de Resumen */}
+        {/* Sección de Resumen del archivo viejo */}
         <Grid item xs={12} md={4}>
           <Paper elevation={3} sx={{ p: 3, borderRadius: 2, bgcolor: theme.palette.background.paper }}>
             <Typography variant="h6" gutterBottom>
@@ -74,7 +118,7 @@ const PanelControl: React.FC = () => {
           </Paper>
         </Grid>
 
-        {/* Sección de Gráficas Principales */}
+        {/* Sección de Gráficas Principales del archivo viejo */}
         <Grid item xs={12} md={8}>
           <Paper elevation={3} sx={{ p: 3, borderRadius: 2, bgcolor: theme.palette.background.paper }}>
             <Typography variant="h6" gutterBottom>
@@ -99,7 +143,7 @@ const PanelControl: React.FC = () => {
           </Paper>
         </Grid>
 
-        {/* Sección de Métricas Adicionales */}
+        {/* Sección de Métricas Adicionales del archivo viejo */}
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 3, borderRadius: 2, bgcolor: theme.palette.background.paper }}>
             <Typography variant="h6" gutterBottom>
@@ -124,7 +168,7 @@ const PanelControl: React.FC = () => {
           </Paper>
         </Grid>
 
-        {/* Sección de Tarjetas de Información */}
+        {/* Sección de Tarjetas de Información del archivo viejo */}
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 3, borderRadius: 2, bgcolor: theme.palette.background.paper }}>
             <Typography variant="h6" gutterBottom>

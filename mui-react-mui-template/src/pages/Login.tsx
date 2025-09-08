@@ -1,4 +1,7 @@
 import * as React from "react";
+import config from '../config.json';
+   import { useNavigate } from 'react-router-dom';
+
 import {
   Box,
   Button,
@@ -15,7 +18,7 @@ import {
   CircularProgress,
   Divider,
 } from "@mui/material";
-import { Visibility, VisibilityOff, Login as LoginIcon } from "@mui/icons-material";
+import { Visibility, VisibilityOff, Login as LoginIcon, ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import { Link as RouterLink } from "react-router-dom";
 
 type LoginForm = {
@@ -25,7 +28,7 @@ type LoginForm = {
 };
 
 const validateEmail = (value: string) =>
-  /^(?:[a-zA-Z0-9_'^&\/+{}!#$%*?|~.-]+)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(value);
+  /^(?:[a-zA-Z0-9_'^&/+{}!#$%*?|~.-]+)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(value);
 
 export default function Login() {
   const [values, setValues] = React.useState<LoginForm>({
@@ -33,6 +36,8 @@ export default function Login() {
     password: "",
     remember: true,
   });
+     const navigate = useNavigate();
+  
   const [showPassword, setShowPassword] = React.useState(false);
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({});
   const [submitting, setSubmitting] = React.useState(false);
@@ -51,7 +56,7 @@ export default function Login() {
     else if (!validateEmail(values.email)) next.email = "Correo inválido";
 
     if (!values.password) next.password = "Ingresa tu contraseña";
-    else if (values.password.length < 6) next.password = "Mínimo 6 caracteres";
+    else if (values.password.length <3) next.password = "Mínimo 6 caracteres";
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -64,6 +69,34 @@ export default function Login() {
     if (!validate()) return;
 
     setSubmitting(true);
+ e.preventDefault();
+    try {
+      const response = await fetch(config.API_URL+'user/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+
+      const data = await response.json();
+      console.log(data);
+      setAlert(data.msg);
+      if (data.success) {
+          localStorage.setItem("token", data.token);
+           navigate('/panel/panel-control');
+         
+      }
+      else{
+        setAlert(data.msg);
+      }
+    } catch (error) {
+      console.error(error);
+      setAlert("Error al registrar el usuario.");
+    }
+
+
+
+
+
     try {
       await new Promise((res) => setTimeout(res, 1000));
       setAlert({ type: "success", msg: "¡Bienvenido! Autenticación exitosa." });
@@ -109,6 +142,7 @@ export default function Login() {
           elevation={8}
           sx={{ p: { xs: 3, sm: 4 }, borderRadius: 4, backdropFilter: "blur(3px)" }}
         >
+          {/* Nuevo botón de regreso - Eliminado de aquí */}
           <Box textAlign="center" mb={2}>
             <Typography variant="h4" fontWeight={700} gutterBottom>
               Inicia sesión
@@ -117,7 +151,6 @@ export default function Login() {
               Accede con tu correo y contraseña
             </Typography>
           </Box>
-
           {alert && (
             <Alert severity={alert.type} onClose={() => setAlert(null)} sx={{ mb: 2, borderRadius: 2 }}>
               {alert.msg}
@@ -131,7 +164,6 @@ export default function Login() {
               type="email"
               value={values.email}
               onChange={onChange("email")}
-              onBlur={() => validate()}
               error={Boolean(errors.email)}
               helperText={errors.email || ""}
               margin="normal"
@@ -140,31 +172,31 @@ export default function Login() {
               autoFocus
             />
 
-            <TextField
-              label="Contraseña"
-              type={showPassword ? "text" : "password"}
-              value={values.password}
-              onChange={onChange("password")}
-              onBlur={() => validate()}
-              error={Boolean(errors.password)}
-              helperText={errors.password || ""}
-              margin="normal"
-              fullWidth
-              autoComplete="current-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                      onClick={() => setShowPassword((s) => !s)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+              <TextField
+                label="Contraseña"
+                type={showPassword ? "text" : "password"}
+                value={values.password}
+                onChange={onChange("password")}
+                error={Boolean(errors.password)}
+                helperText={errors.password || ""}
+                margin="normal"
+                fullWidth
+                autoComplete="current-password"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                        onClick={() => setShowPassword((s) => !s)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
 
             <Box mt={1} mb={2} display="flex" alignItems="center" justifyContent="space-between">
               <FormControlLabel
@@ -197,11 +229,26 @@ export default function Login() {
               {submitting ? "Ingresando..." : "Entrar"}
             </Button>
 
+            {/* Nuevo botón de regreso - Movido aquí */}
+            <Box mt={2}>
+              <Button
+                component={RouterLink}
+                to="/"
+                variant="outlined"
+                fullWidth
+                size="large"
+                startIcon={<ArrowBackIcon />}
+                sx={{ py: 1.2, borderRadius: 3, textTransform: "none", fontWeight: 700 }}
+              >
+                Regresar
+              </Button>
+            </Box>
+
             <Divider sx={{ my: 3 }} />
 
             <Typography variant="body2" textAlign="center" color="text.secondary">
               ¿No tienes cuenta?{" "}
-             <Link component={RouterLink} to="/register" underline="hover">
+              <Link component={RouterLink} to="/register" underline="hover">
                 Regístrate
               </Link>
             </Typography>

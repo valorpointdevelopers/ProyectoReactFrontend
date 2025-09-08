@@ -89,7 +89,7 @@ export const CalentadorWhatsapp = () => {
         gap: 4,
       }}
     >
-      {/* Sección Izquierda - Ilustración y Descripción */}
+
       <Box
         sx={{
           width: "300px",
@@ -124,7 +124,6 @@ export const CalentadorWhatsapp = () => {
         </Paper>
       </Box>
 
-      {/* Sección Derecha - Contenido Principal del Script */}
       <Box sx={{ flexGrow: 1 }}>
         <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 2 }}>
           Agregar mensajes de script de calentamiento

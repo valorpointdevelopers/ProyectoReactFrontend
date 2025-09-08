@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link as RouterLink } from "react-router-dom";
-
+   import { useNavigate } from 'react-router-dom';
+import config from '../config.json';
 import {
   Box,
   Button,
@@ -32,6 +33,7 @@ const SignupForm: React.FC = () => {
     mobile: '',
     acceptPolicy: false,
   });
+   const navigate = useNavigate();
   const [message, setMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -42,19 +44,31 @@ const SignupForm: React.FC = () => {
       [name]: type === 'checkbox' ? checked : value,
     }));
   };
+React.useEffect(()=>{
+    console.log(message);
+  },[message]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:8022/api/user/signup', {
+      
+      const response = await fetch(config.API_URL+'user/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
+
       const data = await response.json();
-      setMessage(data.message);
+      console.log(data);
+      setMessage(data.msg);
       if (data.success) {
         setFormData({ name: '', email: '', password: '', mobile: '', acceptPolicy: false });
+           navigate('/login');
+
+      }
+      else{
+        setMessage(data.msg);
       }
     } catch (error) {
       console.error(error);
