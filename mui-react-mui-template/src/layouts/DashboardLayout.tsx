@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import config from "../config";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Drawer,
@@ -76,6 +77,24 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => {
     </ListItemButton>
   );
 };
+
+
+const fetchPerfil = async (name?: string) => {
+      try {
+        const response = await fetch(config.API_URL+'/user/get_me', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', 'Authorization':'Bearer '+ localStorage.getItem('token') },
+      });
+
+      const data = await response.json();
+      console.log(data);
+
+      } catch (error) {
+        console.log(error);
+      }
+    };
+fetchPerfil(); 
+
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onToggleTheme,
