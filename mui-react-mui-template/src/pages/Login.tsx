@@ -1,4 +1,7 @@
 import * as React from "react";
+import config from '../config.json';
+   import { useNavigate } from 'react-router-dom';
+
 import {
   Box,
   Button,
@@ -15,12 +18,7 @@ import {
   CircularProgress,
   Divider,
 } from "@mui/material";
-import {
-  Visibility,
-  VisibilityOff,
-  Login as LoginIcon,
-  ArrowBack as ArrowBackIcon,
-} from "@mui/icons-material";
+import { Visibility, VisibilityOff, Login as LoginIcon, ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import { Link as RouterLink } from "react-router-dom";
 
 type LoginForm = {
@@ -38,6 +36,8 @@ export default function Login() {
     password: "",
     remember: true,
   });
+     const navigate = useNavigate();
+  
   const [showPassword, setShowPassword] = React.useState(false);
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({});
   const [submitting, setSubmitting] = React.useState(false);
@@ -56,7 +56,7 @@ export default function Login() {
     else if (!validateEmail(values.email)) next.email = "Correo inválido";
 
     if (!values.password) next.password = "Ingresa tu contraseña";
-    else if (values.password.length < 6) next.password = "Mínimo 6 caracteres";
+    else if (values.password.length <3) next.password = "Mínimo 6 caracteres";
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -69,6 +69,34 @@ export default function Login() {
     if (!validate()) return;
 
     setSubmitting(true);
+ e.preventDefault();
+    try {
+      const response = await fetch(config.API_URL+'user/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+
+      const data = await response.json();
+      console.log(data);
+      setAlert(data.msg);
+      if (data.success) {
+          localStorage.setItem("token", data.token);
+           navigate('/panel/dashboard');
+         
+      }
+      else{
+        setAlert(data.msg);
+      }
+    } catch (error) {
+      console.error(error);
+      setAlert({ type: "error", msg: "Error al registrar el usuario" });
+    }
+
+
+
+
+
     try {
       await new Promise((res) => setTimeout(res, 1000));
       setAlert({ type: "success", msg: "¡Bienvenido! Autenticación exitosa." });
@@ -86,44 +114,35 @@ export default function Login() {
       alignItems="center"
       sx={{
         minHeight: "100vh",
-        p: { xs: 2, md: 4 },
         background:
           "radial-gradient(1200px 600px at 10% -10%, rgba(99, 102, 241, 0.15), transparent), radial-gradient(800px 400px at 110% 110%, rgba(16, 185, 129, 0.15), transparent)",
-        overflowY: "auto", 
-        overflowX: "hidden", 
       }}
-      spacing={4}
+      spacing={2}
       flexDirection={{ xs: "column", md: "row" }}
     >
-      {/* Imagen responsiva */}
-      <Grid item xs={12} md="auto">
+      {/* Imagen al costado */}
+      <Grid item>
         <Box
           component="img"
           src="src/images/wcrmlogo.png"
           alt="Imagen Login"
           sx={{
-            maxWidth: { xs: "280px", sm: "380px", md: "450px" },
-            width: "100%",
-            height: "auto",
+            width: { xs: "450px", md: "530px" },
+            height: { xs: "450px", md: "530px" },
             borderRadius: 2,
             objectFit: "cover",
-            mx: "auto",
+            mb: { xs: 2, md: 0 },
           }}
         />
       </Grid>
 
       {/* Login */}
-      <Grid item xs={12} md="auto">
+      <Grid item>
         <Paper
           elevation={8}
-          sx={{
-            p: { xs: 3, sm: 4 },
-            borderRadius: 4,
-            backdropFilter: "blur(3px)",
-            width: { xs: "100%", sm: "380px", md: "420px" },
-            mx: "auto",
-          }}
+          sx={{ p: { xs: 3, sm: 4 }, borderRadius: 4, backdropFilter: "blur(3px)" }}
         >
+          {/* Nuevo botón de regreso - Eliminado de aquí */}
           <Box textAlign="center" mb={2}>
             <Typography variant="h4" fontWeight={700} gutterBottom>
               Inicia sesión
@@ -132,13 +151,8 @@ export default function Login() {
               Accede con tu correo y contraseña
             </Typography>
           </Box>
-
           {alert && (
-            <Alert
-              severity={alert.type}
-              onClose={() => setAlert(null)}
-              sx={{ mb: 2, borderRadius: 2 }}
-            >
+            <Alert severity={alert.type} onClose={() => setAlert(null)} sx={{ mb: 2, borderRadius: 2 }}>
               {alert.msg}
             </Alert>
           )}
@@ -158,56 +172,46 @@ export default function Login() {
               autoFocus
             />
 
-            <TextField
-              label="Contraseña"
-              type={showPassword ? "text" : "password"}
-              value={values.password}
-              onChange={onChange("password")}
-              error={Boolean(errors.password)}
-              helperText={errors.password || ""}
-              margin="normal"
-              fullWidth
-              autoComplete="current-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                      onClick={() => setShowPassword((s) => !s)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+              <TextField
+                label="Contraseña"
+                type={showPassword ? "text" : "password"}
+                value={values.password}
+                onChange={onChange("password")}
+                error={Boolean(errors.password)}
+                helperText={errors.password || ""}
+                margin="normal"
+                fullWidth
+                autoComplete="current-password"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                        onClick={() => setShowPassword((s) => !s)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
 
-            <Box
-              mt={1}
-              mb={2}
-              display="flex"
-              alignItems="center"
-              justifyContent="space-between"
-              flexWrap="wrap"
-            >
+
+            <Box mt={1} mb={2} display="flex" alignItems="center" justifyContent="space-between">
               <FormControlLabel
                 control={
-                  <Checkbox
-                    checked={values.remember}
-                    onChange={onChange("remember")}
-                    color="primary"
-                  />
+                  <Checkbox checked={values.remember} onChange={onChange("remember")} color="primary" />
                 }
                 label="Recordarme"
               />
-
+              
+              {/* Enlace de recuperación de contraseña */}
               <Link
                 component={RouterLink}
                 to="/recuperar-contrasena"
                 variant="body2"
                 underline="hover"
-                sx={{ mt: { xs: 1, sm: 0 } }}
               >
                 ¿Olvidaste tu contraseña?
               </Link>
@@ -220,16 +224,12 @@ export default function Login() {
               size="large"
               disabled={submitting}
               startIcon={submitting ? <CircularProgress size={20} /> : <LoginIcon />}
-              sx={{
-                py: 1.2,
-                borderRadius: 3,
-                textTransform: "none",
-                fontWeight: 700,
-              }}
+              sx={{ py: 1.2, borderRadius: 3, textTransform: "none", fontWeight: 700 }}
             >
               {submitting ? "Ingresando..." : "Entrar"}
             </Button>
 
+            {/* Nuevo botón de regreso - Movido aquí */}
             <Box mt={2}>
               <Button
                 component={RouterLink}
@@ -238,12 +238,7 @@ export default function Login() {
                 fullWidth
                 size="large"
                 startIcon={<ArrowBackIcon />}
-                sx={{
-                  py: 1.2,
-                  borderRadius: 3,
-                  textTransform: "none",
-                  fontWeight: 700,
-                }}
+                sx={{ py: 1.2, borderRadius: 3, textTransform: "none", fontWeight: 700 }}
               >
                 Regresar
               </Button>
