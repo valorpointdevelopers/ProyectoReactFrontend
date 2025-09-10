@@ -88,9 +88,15 @@ const fetchPerfil = async (name?: string) => {
 
       const data = await response.json();
       console.log(data);
+      const datosperfil = {
+        nombre: data.name,
+        email: data.email,
+        telefono: data.mobile
+      }
 
       } catch (error) {
         console.log(error);
+
       }
     };
 fetchPerfil(); 
@@ -624,7 +630,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Nombre"
-                defaultValue=""
+                value= ""
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
@@ -639,7 +645,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Correo electrónico"
-                defaultValue=""
+                value=""
                 variant="outlined"
                 InputProps={{
                   startAdornment: (
@@ -654,7 +660,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Tu número de móvil"
-                defaultValue=""
+                value=""
                 variant="outlined"
                 InputProps={{
                   startAdornment: (

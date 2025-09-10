@@ -4,7 +4,6 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import DashboardLayout from "./layouts/DashboardLayout";
 import LandingLayout from "./layouts/LandingLayout";
-import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import SignupForm from "./pages/SignupForm";
 import Phonebook from "./pages/Phonebook";
@@ -78,8 +77,7 @@ function App() {
           <Route path="inbox" element={<BandejadeEntrada />} />
           <Route path="calentador" element={<CalentadorWhatsapp />} />
           <Route path="contacts" element={<Phonebook />} />
-          <Route path="panel-control" element={<PanelControl />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard" element={<PanelControl />} />
           <Route path="users" element={<Users />} />
           <Route path="campaxa" element={<CampaxaChat />} />
           <Route path="api" element={<Api />} />
