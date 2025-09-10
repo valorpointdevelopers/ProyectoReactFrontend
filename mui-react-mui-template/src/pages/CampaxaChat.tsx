@@ -52,7 +52,9 @@ type CampanaRow = {
 };
 
 export default function CampaxaChat() {
-  const [activeMenu, setActiveMenu] = useState<"chatbot" | "campanas">("chatbot");
+  const [activeMenu, setActiveMenu] = useState<"chatbot" | "campanas">(
+    "chatbot"
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const theme = useTheme();
@@ -159,11 +161,12 @@ export default function CampaxaChat() {
 
   const drawerContent = (
     <Box p={2} width={isMobile ? 250 : 220}>
-      <Box display="flex" alignItems="center" mb={2}>
-        <img src={sendingImg} alt="Logo" width={40} />
-        <Typography variant="h6" fontWeight={600} ml={1}>
-          Menu
-        </Typography>
+      <Box display="flex" justifyContent="center" mb={2}>
+        <img
+          src={sendingImg}
+          alt="Logo"
+          style={{ width: "80px", height: "auto" }}
+        />
       </Box>
       <Divider sx={{ mb: 2 }} />
       <Button
@@ -257,13 +260,19 @@ export default function CampaxaChat() {
                         />
                       </Grid>
                       <Grid item xs={12} sm={6}>
-                        <TextField
+                        <Select
                           fullWidth
                           size="small"
-                          label="Instancia"
+                          displayEmpty
                           value={instancia}
                           onChange={(e) => setInstancia(e.target.value)}
-                        />
+                        >
+                          <MenuItem value="" disabled>
+                            Seleccionar instancia
+                          </MenuItem>
+                          <MenuItem value="Instancia 1">Instancia 1</MenuItem>
+                          <MenuItem value="Instancia 2">Instancia 2</MenuItem>
+                        </Select>
                       </Grid>
                       <Grid item xs={12} sm={6}>
                         <TextField
@@ -296,14 +305,32 @@ export default function CampaxaChat() {
                           label="Activo"
                         />
                       </Grid>
+
+                      {/* Botones Cerrar y Enviar juntos */}
                       <Grid item xs={12}>
-                        <Button
-                          type="submit"
-                          variant="contained"
-                          startIcon={<Send size={16} />}
+                        <Box
+                          display="flex"
+                          justifyContent="flex-end"
+                          gap={2}
                         >
-                          {editChatbot ? "Guardar cambios" : "Enviar"}
-                        </Button>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            onClick={() => {
+                              setShowAddChatbot(false);
+                              setEditChatbot(null);
+                            }}
+                          >
+                            Cerrar
+                          </Button>
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            startIcon={<Send size={16} />}
+                          >
+                            {editChatbot ? "Guardar cambios" : "Enviar"}
+                          </Button>
+                        </Box>
                       </Grid>
                     </Grid>
                   </Box>
@@ -411,6 +438,8 @@ export default function CampaxaChat() {
                           size="small"
                           value={plantilla}
                           onChange={(e) => setPlantilla(e.target.value)}
+                          displayEmpty
+                          renderValue={(val) => val || "Seleccionar plantilla"}
                         >
                           <MenuItem value="Bienvenida">Bienvenida</MenuItem>
                           <MenuItem value="Promo">Promo</MenuItem>
@@ -465,8 +494,14 @@ export default function CampaxaChat() {
                           size="small"
                           value={zonaHoraria}
                           onChange={(e) => setZonaHoraria(e.target.value)}
+                          displayEmpty
+                          renderValue={(val) =>
+                            val || "Seleccionar zona horaria"
+                          }
                         >
-                          <MenuItem value="America/Mexico_City">México</MenuItem>
+                          <MenuItem value="America/Mexico_City">
+                            México
+                          </MenuItem>
                           <MenuItem value="America/Bogota">Colombia</MenuItem>
                           <MenuItem value="America/Lima">Perú</MenuItem>
                           <MenuItem value="Europe/Madrid">España</MenuItem>
@@ -485,14 +520,32 @@ export default function CampaxaChat() {
                           label="Activa"
                         />
                       </Grid>
+
+                      {/* Botones Cerrar y Enviar juntos */}
                       <Grid item xs={12}>
-                        <Button
-                          type="submit"
-                          variant="contained"
-                          startIcon={<Send size={16} />}
+                        <Box
+                          display="flex"
+                          justifyContent="flex-end"
+                          gap={2}
                         >
-                          {editCampana ? "Guardar cambios" : "Enviar"}
-                        </Button>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            onClick={() => {
+                              setShowAddCampana(false);
+                              setEditCampana(null);
+                            }}
+                          >
+                            Cerrar
+                          </Button>
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            startIcon={<Send size={16} />}
+                          >
+                            {editCampana ? "Guardar cambios" : "Enviar"}
+                          </Button>
+                        </Box>
                       </Grid>
                     </Grid>
                   </Box>
@@ -524,7 +577,9 @@ export default function CampaxaChat() {
                           <TableCell>{c.titulo}</TableCell>
                           <TableCell>{c.plantilla}</TableCell>
                           <TableCell>{c.agenda}</TableCell>
-                          <TableCell>{c.estado ? "Activo" : "Inactivo"}</TableCell>
+                          <TableCell>
+                            {c.estado ? "Activo" : "Inactivo"}
+                          </TableCell>
                           <TableCell>
                             {c.programar
                               ? new Date(c.programar).toLocaleString()
@@ -547,6 +602,7 @@ export default function CampaxaChat() {
                                 setZonaHoraria(c.zonaHoraria);
                                 setShowAddCampana(true);
                               }}
+                              size="small"
                             >
                               <Pencil size={16} />
                             </IconButton>
@@ -554,6 +610,7 @@ export default function CampaxaChat() {
                           <TableCell>
                             <IconButton
                               color="error"
+                              size="small"
                               onClick={() => setDeleteCampanaId(c.id)}
                             >
                               <Trash2 size={16} />
@@ -569,19 +626,25 @@ export default function CampaxaChat() {
           </>
         )}
 
-        {/* Dialogs */}
+        {/* Dialog eliminar chatbot */}
         <Dialog
           open={deleteChatbotId !== null}
           onClose={() => setDeleteChatbotId(null)}
         >
           <DialogTitle>Eliminar chatbot</DialogTitle>
-          <DialogContent>¿Seguro que deseas eliminar este chatbot?</DialogContent>
+          <DialogContent>
+            <Typography>
+              ¿Seguro que quieres eliminar este chatbot?
+            </Typography>
+          </DialogContent>
           <DialogActions>
             <Button onClick={() => setDeleteChatbotId(null)}>Cancelar</Button>
             <Button
               color="error"
               onClick={() => {
-                setRows((prev) => prev.filter((r) => r.id !== deleteChatbotId));
+                setRows((prev) =>
+                  prev.filter((r) => r.id !== deleteChatbotId)
+                );
                 setDeleteChatbotId(null);
               }}
             >
@@ -590,12 +653,17 @@ export default function CampaxaChat() {
           </DialogActions>
         </Dialog>
 
+        {/* Dialog eliminar campaña */}
         <Dialog
           open={deleteCampanaId !== null}
           onClose={() => setDeleteCampanaId(null)}
         >
           <DialogTitle>Eliminar campaña</DialogTitle>
-          <DialogContent>¿Seguro que deseas eliminar esta campaña?</DialogContent>
+          <DialogContent>
+            <Typography>
+              ¿Seguro que quieres eliminar esta campaña?
+            </Typography>
+          </DialogContent>
           <DialogActions>
             <Button onClick={() => setDeleteCampanaId(null)}>Cancelar</Button>
             <Button
