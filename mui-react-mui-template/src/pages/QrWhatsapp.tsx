@@ -175,7 +175,7 @@ export const QrWhatsapp: React.FC<QrWhatsappProps> = ({ open = false, onClose, v
 
     const payload = async () => {
       try {
-        const response = await fetch(config.API_URL + 'session/create_qr', {
+        const response = await fetch(config.API_URL + '/session/create_qr', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
           body: JSON.stringify({ title: 'Default', syncMax: false }),
