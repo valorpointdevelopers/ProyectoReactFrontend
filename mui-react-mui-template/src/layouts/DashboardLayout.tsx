@@ -87,6 +87,7 @@ const fetchPerfil = async (name?: string) => {
       });
 
       const data = await response.json();
+      localStorage.setItem('uid',data.data.uid)
       console.log(data);
       const datosperfil = {
         nombre: data.name,

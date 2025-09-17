@@ -1,4 +1,3 @@
-// src/config.js
 const config = {
   API_URL: "http://localhost:8022/api"
 };
