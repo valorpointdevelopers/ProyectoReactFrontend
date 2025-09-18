@@ -1,23 +1,20 @@
 // src/db.ts
-
 import Dexie, { Table } from 'dexie';
-// Asegúrate de que la ruta a tus tipos sea correcta
-import { Message } from './types'; 
+import { Message, Chat } from './types'; // Ahora también importamos Chat
 
 export class MySubClassedDexie extends Dexie {
-  // 'messages' es la propiedad que representará la tabla.
   messages!: Table<Message>; 
+  // NUEVO: Añadimos una tabla para los chats
+  chats!: Table<Chat>;
 
   constructor() {
-    // El nombre de tu base de datos local
-    super('sistemacrm'); 
+    super('sistemacrm');
     
-    this.version(1).stores({
-      // Definimos la tabla 'messages'
-      // '++id' es una clave primaria autoincremental (opcional, pero buena práctica)
-      // '&msgId' es una clave primaria única que viene de tu backend
-      // 'chatId' es un índice para poder buscar mensajes por chat de forma rápida
-      messages: 'msgId, chatId' 
+    // MODIFICADO: Incrementamos la versión a 2 para añadir la nueva tabla
+    this.version(2).stores({
+      messages: 'msgId, chatId',
+      // NUEVO: Definimos la tabla de chats. '&jid' es la clave primaria.
+      chats: '&jid, unreadCount'
     });
   }
 }

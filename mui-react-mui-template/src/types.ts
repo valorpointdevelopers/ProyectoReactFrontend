@@ -5,15 +5,25 @@ export interface Chat {
   lastMessage: string;
   timestamp: string;
   phoneNumber: string;
+  dbChatId: string; 
+  unreadCount?: number; 
+  // NUEVO: Propiedad para la URL de la foto de perfil
+  profilePicUrl?: string; 
 }
 
 export interface Message {
+  // ... (interfaz sin cambios)
   msgId: string;
   chatId: string;
   fromMe: boolean;
-  text: string;
+  text?: string;
   timestamp: number;
   type: string;
-  
-  status?: 'sent' | 'delivered' | 'read' | 'error' | 'pending'; 
+  status?: 'sent' | 'delivered' | 'read' | 'error' | 'pending';
+  media?: {
+    url: string;
+    mimetype?: string;
+    caption?: string;
+    fileName?: string;
+  };
 }
