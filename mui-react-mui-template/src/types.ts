@@ -5,16 +5,15 @@ export interface Chat {
   lastMessage: string;
   timestamp: string;
   phoneNumber: string;
-  avatar?: string;
 }
 
 export interface Message {
   msgId: string;
-  type: string;
-  text: string;
-  fromMe: boolean;
-  timestamp: number;
   chatId: string;
-  status?: 'sent' | 'delivered' | 'read' | 'error';
-  senderName?: string;
+  fromMe: boolean;
+  text: string;
+  timestamp: number;
+  type: string;
+  
+  status?: 'sent' | 'delivered' | 'read' | 'error' | 'pending'; 
 }
