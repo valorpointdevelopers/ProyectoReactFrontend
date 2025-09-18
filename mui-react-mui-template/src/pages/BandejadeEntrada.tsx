@@ -16,7 +16,7 @@ import { Chat, Message } from '../types';
 import config from "../config.json";
 import { db } from '../db';
 
-// ======================= SUB-COMPONENTES ==========================
+// ======================= SUB-COMPONENTES (Sin Cambios) ==========================
 const ChatListItem: React.FC<{ chat: Chat; isSelected: boolean; onClick: () => void; }> = ({ chat, isSelected, onClick }) => {
     const theme = useTheme();
     return (
@@ -125,7 +125,7 @@ const BandejadeEntrada: React.FC = () => {
 
     const selectedChatRef = useRef<Chat | null>(null);
     const socketRef = useRef<Socket | null>(null);
-const typingTimeoutRef = useRef<number | null>(null);
+    const typingTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
         const setupSockets = () => {
@@ -135,7 +135,6 @@ const typingTimeoutRef = useRef<number | null>(null);
             const userId = localStorage.getItem('uid');
 
             socket.on('connect', () => {
-                console.log('✅ Conectado al servidor de Sockets con ID:', socket.id);
                 if (userId) socket.emit('user_connected', { userId });
             });
 
@@ -158,14 +157,21 @@ const typingTimeoutRef = useRef<number | null>(null);
                 db.messages.put(messageData);
 
                 if (selectedChatRef.current?.jid === messageData.chatId) {
-                    setMessages(prev => [...prev, messageData]);
+                    setMessages(prev => {
+                        if (prev.some(msg => msg.msgId === messageData.msgId)) {
+                            return prev;
+                        }
+                        return [...prev, messageData];
+                    });
                 }
                 
                 setChats(prev => {
                     const chatIndex = prev.findIndex(c => c.jid === messageData.chatId);
                     let newChats = [...prev];
+                    const newTimestamp = new Date(messageData.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
                     if (chatIndex > -1) {
-                        const updatedChat = { ...newChats[chatIndex], lastMessage: messageData.text, timestamp: new Date(messageData.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+                        const updatedChat = { ...newChats[chatIndex], lastMessage: messageData.text, timestamp: newTimestamp };
                         newChats.splice(chatIndex, 1);
                         newChats.unshift(updatedChat);
                     } else {
@@ -174,7 +180,7 @@ const typingTimeoutRef = useRef<number | null>(null);
                             jid: messageData.chatId,
                             name: newMessage.senderName || messageData.chatId.split('@')[0],
                             lastMessage: messageData.text,
-                            timestamp: new Date(messageData.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            timestamp: newTimestamp,
                             phoneNumber: messageData.chatId.split('@')[0],
                         };
                         newChats.unshift(newChat);
@@ -184,7 +190,6 @@ const typingTimeoutRef = useRef<number | null>(null);
             });
             
             socket.on('msg-status-updated', (updates: { id: string, jid: string, status: number }[]) => {
-                console.log('Status Update:', updates);
                 for (const update of updates) {
                     const statusMap: { [key: number]: Message['status'] } = { 3: 'delivered', 4: 'read' };
                     const newStatus = statusMap[update.status] || 'sent';
@@ -208,8 +213,6 @@ const typingTimeoutRef = useRef<number | null>(null);
                     setTypingInfo({ jid, isTyping: false });
                 }
             });
-
-            socket.on('disconnect', () => console.log('🔌 Desconectado del servidor de Sockets.'));
         };
 
         if (!socketRef.current) setupSockets();
@@ -284,34 +287,22 @@ const typingTimeoutRef = useRef<number | null>(null);
         finally { setIsLoadingMessages(false); }
     };
 
+    // FUNCIÓN CORREGIDA PARA EVITAR DUPLICADOS
     const handleSendMessage = async (text: string) => {
         if (!selectedChat || !instanceId) return;
-        const tempId = `temp_${Date.now()}`;
-        const tempMessage: Message = {
-            msgId: tempId, text, fromMe: true, timestamp: Math.floor(Date.now() / 1000),
-            chatId: selectedChat.jid, status: 'sent', type: 'text'
-        };
 
-        setMessages(prev => [...prev, tempMessage]);
-        await db.messages.put(tempMessage);
-
+        // Ya no hacemos la actualización "optimista" aquí.
+        // Solo enviamos la petición al backend.
         try {
-            const res = await fetch(`${config.API_URL}inbox/send_text`, {
+            await fetch(`${config.API_URL}inbox/send_text`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
                 body: JSON.stringify({ text, toJid: selectedChat.jid, toName: selectedChat.name, chatId: selectedChat.jid, instance: instanceId })
             });
-            const data = await res.json();
-
-            if (data.success && data.data?.msgId) {
-                const realMessage: Message = { ...tempMessage, msgId: data.data.msgId };
-                await db.messages.delete(tempId);
-                await db.messages.put(realMessage);
-                setMessages(prev => prev.map(m => m.msgId === tempId ? realMessage : m));
-            } else { throw new Error(data.msg || "Error en la respuesta del servidor."); }
+            // El mensaje aparecerá en la UI cuando el evento 'push_new_msg' llegue por el socket.
         } catch (err) {
-            console.error(err);
-            setMessages(prev => prev.map(m => m.msgId === tempId ? { ...m, status: 'error' } : m));
+            console.error("Error al enviar mensaje:", err);
+            // Opcional: podrías manejar un estado de error para el mensaje aquí.
         }
     };
 
