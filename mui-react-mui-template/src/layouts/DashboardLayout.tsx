@@ -78,6 +78,31 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => {
   );
 };
 
+
+const fetchPerfil = async (name?: string) => {
+      try {
+        const response = await fetch(config.API_URL+'/user/get_me', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', 'Authorization':'Bearer '+ localStorage.getItem('token') },
+      });
+
+      const data = await response.json();
+      localStorage.setItem('uid',data.data.uid)
+      console.log(data);
+      const datosperfil = {
+        nombre: data.name,
+        email: data.email,
+        telefono: data.mobile
+      }
+
+      } catch (error) {
+        console.log(error);
+
+      }
+    };
+fetchPerfil(); 
+
+
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onToggleTheme,
   mode = "light",

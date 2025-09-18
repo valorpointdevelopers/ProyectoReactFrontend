@@ -1,141 +1,547 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Box,
-  Typography,
-  TextField,
-  InputAdornment,
-  Select,
-  MenuItem,
-  IconButton,
-  Paper,
-  useTheme,
-  useMediaQuery,
+    Box, Typography, TextField, InputAdornment, Chip, IconButton,
+    Paper, useTheme, CircularProgress, List, Avatar, Menu, MenuItem,
+    AppBar, Toolbar, ListItem, ListItemAvatar, ListItemText, Button, Modal, Badge, Link
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import WhatsAppIcon from "@mui/icons-material/WhatsApp";
-import EventIcon from "@mui/icons-material/Event";
+import SendIcon from '@mui/icons-material/Send';
+import CheckIcon from '@mui/icons-material/Check';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import ArticleIcon from '@mui/icons-material/Article';
+import { io, Socket } from "socket.io-client";
+
 import welcomeCats from "../images/no-chat-found.svg";
+// Asegúrate de que tu tipo 'Chat' incluya la propiedad opcional 'profilePicUrl'
+// export interface Chat { ...; profilePicUrl?: string; }
+import { Chat, Message } from '../types';
+import config from "../config.json";
+import { db } from '../db';
 
-const BandejaEntrada: React.FC = () => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+// ======================= SUB-COMPONENTES ==========================
 
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
-  return (
-    <Box
-      display="flex"
-      height="100vh"
-      width="100%"
-      bgcolor={theme.palette.background.default}
-      overflow="hidden"
-      sx={{ flexDirection: { xs: "column", sm: "row" } }}
-    >
-      {/* Panel lateral izquierdo */}
-      <Paper
-        elevation={1}
-        sx={{
-          width: { xs: "100%", sm: "300px" },
-          p: 2,
-          borderRight: `1px solid ${theme.palette.divider}`,
-          bgcolor: theme.palette.background.paper,
-          display: "flex",
-          flexDirection: "column",
-          
-          height: { xs: "auto", sm: "100vh" },
-          boxSizing: "border-box",
-          flexShrink: 0,
-        }}
-      >
-        {/* Buscador */}
-        <Box display="flex" gap={1} alignItems="center" mb={2}>
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Buscar"
-            fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Box>
-
-        {/* Botones de búsqueda */}
-        <Box 
-          display="flex" 
-          gap={1} 
-          mb={2}
-          sx={{ flexDirection: { xs: "column", sm: "row" } }}
-        >
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Número de teléfono"
-            fullWidth
-          />
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Nombre"
-            fullWidth
-          />
-        </Box>
-
-        {/* Filtro */}
-        <Box display="flex" alignItems="center" gap={1}>
-          <Select size="small" fullWidth defaultValue="todos">
-            <MenuItem value="todos">Todos los chats</MenuItem>
-            <MenuItem value="whatsapp">WhatsApp</MenuItem>
-            <MenuItem value="otros">Otros</MenuItem>
-          </Select>
-          <IconButton color="success">
-            <WhatsAppIcon />
-          </IconButton>
-          <IconButton color="primary">
-            <EventIcon />
-          </IconButton>
-        </Box>
-        
-        <Box flex={1} /> 
-      </Paper>
-
-      {/* Panel derecho */}
-      <Box
-        flex={1}
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        flexDirection="column"
-        bgcolor={theme.palette.background.default}
-        color={theme.palette.text.primary}
-        height="100vh"
-        sx={{ display: { xs: "none", sm: "flex" } }}
-      >
-        <img
-          src={welcomeCats}
-          alt="Welcome cats"
-          style={{
-            width: "200px",
-            marginBottom: "16px",
-            filter: isDark ? "invert(1)" : "none",
-          }}
-        />
-        <Typography
-          variant="h4"
-          sx={{ fontWeight: "bold", color: theme.palette.text.primary, mb: 1 }}
-        >
-          WELCOME
-        </Typography>
-        <Typography variant="body1" color="textSecondary">
-          Ups. no se encontró ninguna lista de chat
-        </Typography>
-      </Box>
-    </Box>
-  );
+const ChatListItem: React.FC<{ chat: Chat; isSelected: boolean; onClick: () => void; }> = ({ chat, isSelected, onClick }) => {
+    return (
+        <ListItem button onClick={onClick} sx={{ backgroundColor: isSelected ? 'action.selected' : "transparent", "&:hover": { backgroundColor: 'action.hover' }, borderRadius: 2, mb: 1, pr: 1 }}>
+            <ListItemAvatar>
+                <Avatar src={chat.profilePicUrl}>
+                    {!chat.profilePicUrl && (chat.name ? chat.name.charAt(0) : '?')}
+                </Avatar>
+            </ListItemAvatar>
+            <ListItemText
+                primary={<Typography variant="subtitle1" noWrap>{chat.name}</Typography>}
+                secondary={<Typography variant="body2" color="text.secondary" noWrap>{chat.lastMessage}</Typography>}
+            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '55px', ml: 1 }}>
+                <Typography variant="caption" color="primary.main" sx={{ fontWeight: 'bold' }}>
+                    {chat.timestamp}
+                </Typography>
+                <Badge 
+                    color="primary" 
+                    badgeContent={chat.unreadCount} 
+                    invisible={!chat.unreadCount || chat.unreadCount === 0}
+                    sx={{ mt: 0.5 }}
+                />
+            </Box>
+        </ListItem>
+    );
 };
 
-export default BandejaEntrada;
+const MessageInput: React.FC<{ onSendMessage: (text: string) => void; disabled?: boolean; }> = ({ onSendMessage, disabled = false }) => {
+    const [text, setText] = useState('');
+    const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); if (text.trim()) { onSendMessage(text.trim()); setText(''); } };
+    return (
+        <Paper component="form" onSubmit={handleSubmit} elevation={2} sx={{ p: '4px 8px', display: 'flex', alignItems: 'center', width: '100%', backgroundColor: 'background.default' }}>
+            <TextField fullWidth variant="standard" placeholder="Escribe un mensaje..." value={text} onChange={(e) => setText(e.target.value)} disabled={disabled} InputProps={{ disableUnderline: true }} autoComplete="off" />
+            <IconButton type="submit" color="primary" disabled={!text.trim() || disabled}><SendIcon /></IconButton>
+        </Paper>
+    );
+};
+
+const MessageStatus: React.FC<{ status?: Message['status']; }> = ({ status }) => {
+    if (!status) return null;
+    const iconStyles = { fontSize: '1rem', color: status === 'read' ? '#53bdeb' : 'action.active', marginLeft: '4px' };
+    if (status === 'pending') return <CircularProgress size={12} sx={{ ...iconStyles, color: 'action.active' }} />;
+    if (status === 'sent') return <CheckIcon sx={iconStyles} />;
+    if (status === 'delivered' || status === 'read') return <DoneAllIcon sx={iconStyles} />;
+    return null;
+};
+
+const ChatActions: React.FC<{ onDeleteChat: () => void; onUpdateNote: () => void; onGetSenderDetails: () => void; }> = ({ onDeleteChat, onUpdateNote, onGetSenderDetails }) => {
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
+    const handleClick = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
+    const handleClose = () => setAnchorEl(null);
+    return (
+        <Box>
+            <IconButton onClick={handleClick}><MoreVertIcon /></IconButton>
+            <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+                <MenuItem onClick={() => { onGetSenderDetails(); handleClose(); }}>Ver Detalles del Contacto</MenuItem>
+                <MenuItem onClick={() => { onUpdateNote(); handleClose(); }}>Añadir/Editar Nota</MenuItem>
+                <MenuItem onClick={() => { onDeleteChat(); handleClose(); }} sx={{ color: 'error.main' }}>Eliminar Chat</MenuItem>
+            </Menu>
+        </Box>
+    );
+};
+
+const AttachmentMenu: React.FC<{ onSendMedia: (file: File) => void; }> = ({ onSendMedia }) => {
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const handleClick = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
+    const handleClose = () => setAnchorEl(null);
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) { onSendMedia(file); }
+        handleClose();
+    };
+    const openFileDialog = (accept: string) => {
+        if(fileInputRef.current) {
+            fileInputRef.current.accept = accept;
+            fileInputRef.current.click();
+        }
+    };
+    return (
+        <Box>
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
+            <IconButton onClick={handleClick}><AttachFileIcon /></IconButton>
+            <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+                <MenuItem onClick={() => openFileDialog('image/*')}>Imagen</MenuItem>
+                <MenuItem onClick={() => openFileDialog('video/*')}>Video</MenuItem>
+                <MenuItem onClick={() => openFileDialog('audio/*')}>Audio</MenuItem>
+                <MenuItem onClick={() => openFileDialog('.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx')}>Documento</MenuItem>
+            </Menu>
+        </Box>
+    );
+};
+
+const DeleteChatModal: React.FC<{ open: boolean; onClose: () => void; onConfirm: () => void; chatName: string; }> = ({ open, onClose, onConfirm, chatName }) => {
+    const style = { position: 'absolute' as 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', border: '2px solid #000', boxShadow: 24, p: 4, borderRadius: 2 };
+    return (
+        <Modal open={open} onClose={onClose}>
+            <Box sx={style}>
+                <Typography variant="h6" component="h2">Confirmar Eliminación</Typography>
+                <Typography sx={{ mt: 2 }}>¿Estás seguro de que quieres eliminar el chat con **{chatName}**?</Typography>
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                    <Button variant="text" onClick={onClose}>Cancelar</Button>
+                    <Button variant="contained" color="error" onClick={onConfirm}>Eliminar</Button>
+                </Box>
+            </Box>
+        </Modal>
+    );
+}
+
+const ContactDetailsModal: React.FC<{ open: boolean; onClose: () => void; details: { name: string; status?: string; profilePhoto?: string; } | null; }> = ({ open, onClose, details }) => {
+    const style = { position: 'absolute' as 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', border: '2px solid #000', boxShadow: 24, p: 4, borderRadius: 2, textAlign: 'center' };
+    if (!details) return null;
+    return (
+        <Modal open={open} onClose={onClose}>
+            <Box sx={style}>
+                <Avatar src={details.profilePhoto} sx={{ width: 100, height: 100, margin: '0 auto 16px', fontSize: '3rem' }}>
+                    {!details.profilePhoto && details.name.charAt(0)}
+                </Avatar>
+                <Typography variant="h6" component="h2">{details.name}</Typography>
+                <Typography sx={{ mt: 2, fontStyle: 'italic', color: 'text.secondary' }}>
+                    "{details.status || 'Estado no disponible'}"
+                </Typography>
+                {details.profilePhoto && (
+                    <Typography sx={{ mt: 2 }}>
+                        <Link href={details.profilePhoto} target="_blank" rel="noopener noreferrer">Ver foto de perfil completa</Link>
+                    </Typography>
+                )}
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button variant="contained" onClick={onClose}>Cerrar</Button>
+                </Box>
+            </Box>
+        </Modal>
+    );
+};
+
+const MessageBubble: React.FC<{ msg: Message }> = ({ msg }) => {
+    const theme = useTheme();
+    const formatTime = (ts: number) => ts ? new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    
+    const renderMedia = () => {
+        if (!msg.media) return null;
+        const { url, mimetype, caption, fileName } = msg.media;
+        
+        if (mimetype?.startsWith('image/')) {
+            return <Link href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt={caption || 'imagen'} style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', display: 'block' }} /></Link>;
+        }
+        if (mimetype?.startsWith('video/')) {
+            return <video src={url} controls style={{ maxWidth: '100%', borderRadius: '8px' }} />;
+        }
+        if (mimetype?.startsWith('audio/')) {
+            return <audio src={url} controls style={{ width: '100%' }} />;
+        }
+        
+        let docIcon = <DescriptionIcon sx={{ fontSize: 40 }} />;
+        if (mimetype?.includes('pdf')) docIcon = <PictureAsPdfIcon sx={{ fontSize: 40, color: '#D32F2F' }} />;
+        if (mimetype?.includes('word')) docIcon = <ArticleIcon sx={{ fontSize: 40, color: '#2B579A' }} />;
+        
+        return (
+            <Link href={url} target="_blank" rel="noopener noreferrer" download={fileName} sx={{ textDecoration: 'none', color: 'inherit' }}>
+                <Box display="flex" alignItems="center" gap={1} p={1} sx={{ backgroundColor: 'action.hover', borderRadius: 1 }}>
+                    {docIcon}
+                    <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>{fileName}</Typography>
+                </Box>
+            </Link>
+        );
+    };
+
+    const messageText = msg.text || msg.media?.caption;
+
+    return (
+        <Box key={msg.msgId} display="flex" justifyContent={msg.fromMe ? 'flex-end' : 'flex-start'} mb={1}>
+            <Paper elevation={1} sx={{ p: 1.5, borderRadius: 2, maxWidth: '70%', backgroundColor: msg.fromMe ? (theme.palette.mode === 'dark' ? '#005c4b' : '#dcf8c6') : theme.palette.background.paper }}>
+                {msg.media && renderMedia()}
+                {messageText && (
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', mt: msg.media ? 0.5 : 0 }}>
+                        {messageText}
+                    </Typography>
+                )}
+                <Box display="flex" justifyContent="flex-end" alignItems="center" mt={0.5}>
+                    <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>{formatTime(msg.timestamp)}</Typography>
+                    {msg.fromMe && <MessageStatus status={msg.status} />}
+                </Box>
+            </Paper>
+        </Box>
+    );
+};
+
+const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: boolean; typingInfo: { jid: string, isTyping: boolean } | null; onSendMessage: (text: string) => void; onSendMedia: (file: File) => void; onDeleteChat: () => void; onUpdateNote: () => void; onGetSenderDetails: () => void; }> = (props) => {
+    const { chat, messages, onSendMessage, isLoading, typingInfo, onSendMedia, onDeleteChat, onUpdateNote, onGetSenderDetails } = props;
+    const messagesEndRef = useRef<null | HTMLDivElement>(null);
+    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+    
+    return (
+        <Box display="flex" flexDirection="column" height="100%" width="100%">
+            <AppBar position="static" color="default" elevation={1}>
+                <Toolbar>
+                    <Avatar src={chat.profilePicUrl} sx={{ mr: 2 }}>
+                       {!chat.profilePicUrl && (chat.name ? chat.name.charAt(0) : '?')}
+                    </Avatar>
+                    <Box flexGrow={1}>
+                        <Typography variant="h6">{chat.name}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            {typingInfo?.jid === chat.jid && typingInfo?.isTyping ? <em style={{ color: 'primary.main' }}>escribiendo...</em> : chat.phoneNumber}
+                        </Typography>
+                    </Box>
+                    <ChatActions onDeleteChat={onDeleteChat} onUpdateNote={onUpdateNote} onGetSenderDetails={onGetSenderDetails} />
+                </Toolbar>
+            </AppBar>
+            <Box flex={1} p={2} sx={{ overflowY: 'auto', backgroundColor: 'action.disabledBackground' }}>
+                {isLoading ? <Box display="flex" justifyContent="center" alignItems="center" height="100%"><CircularProgress /></Box> :
+                    messages.length > 0 ? messages.map((msg) => <MessageBubble key={msg.msgId} msg={msg} />) :
+                    <Box display="flex" justifyContent="center" alignItems="center" height="100%" flexDirection="column" color="text.secondary">
+                        <ChatBubbleOutlineIcon sx={{ fontSize: 50, mb: 2 }} />
+                        <Typography>No hay mensajes en este chat.</Typography>
+                    </Box>
+                }
+                <div ref={messagesEndRef} />
+            </Box>
+            <Box p={1} sx={{ backgroundColor: 'background.default', display: 'flex', alignItems: 'center' }}>
+                <AttachmentMenu onSendMedia={onSendMedia} />
+                <MessageInput onSendMessage={onSendMessage} disabled={isLoading} />
+            </Box>
+        </Box>
+    );
+};
+
+// ======================= COMPONENTE PRINCIPAL ==========================
+const BandejadeEntrada: React.FC = () => {
+    const theme = useTheme();
+    const isDark = theme.palette.mode === "dark";
+    const [chats, setChats] = useState<Chat[]>([]);
+    const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [isLoadingChats, setIsLoadingChats] = useState(true);
+    const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [instanceId, setInstanceId] = useState<string | null>(null);
+    const [connectionStatus, setConnectionStatus] = useState("connecting");
+    const [typingInfo, setTypingInfo] = useState<{ jid: string, isTyping: boolean } | null>(null);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    
+    const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+    const [contactDetails, setContactDetails] = useState<{ name: string; status?: string; profilePhoto?: string; } | null>(null);
+    
+    const selectedChatRef = useRef<Chat | null>(null);
+    const socketRef = useRef<Socket | null>(null);
+    const typingTimeoutRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        selectedChatRef.current = selectedChat;
+    }, [selectedChat]);
+
+    useEffect(() => {
+        const handleEscapeKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { setSelectedChat(null); } };
+        if (selectedChat) { document.addEventListener('keydown', handleEscapeKey); }
+        return () => { document.removeEventListener('keydown', handleEscapeKey); };
+    }, [selectedChat]);
+
+    const transformBackendMessage = (msg: any, jid: string): Message => {
+        const baseURL = config.API_URL.replace('/api', '');
+        const messageType = msg.type?.toLowerCase();
+        if (['image', 'video', 'doc', 'aud', 'doc_cap'].includes(messageType)) {
+            const mediaType = messageType === 'doc_cap' ? 'doc' : messageType;
+            return {
+                msgId: msg.msgId, chatId: jid, fromMe: msg.route === 'outgoing',
+                timestamp: msg.timestamp, type: mediaType, status: msg.status,
+                media: { url: `${baseURL}/media/${msg.msgContext.fileName}`, fileName: msg.msgContext.fileName, mimetype: msg.msgContext.mimetype, caption: msg.msgContext.caption || '' }
+            };
+        }
+        return {
+            msgId: msg.msgId, chatId: jid, fromMe: msg.route === 'outgoing',
+            text: msg.msgContext?.text || '', timestamp: msg.timestamp,
+            type: 'text', status: msg.status
+        };
+    };
+    
+    useEffect(() => {
+        const setupSockets = () => {
+            const socketUrl = config.API_URL.replace('/api/', '');
+            const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+            socketRef.current = socket;
+            const userId = localStorage.getItem('uid');
+            socket.on('connect', () => { if (userId) socket.emit('user_connected', { userId }); });
+            socket.on('whatsapp-status', ({ status }: { status: string }) => { setConnectionStatus(status); });
+            socket.on('push_new_msg', (data: any) => {
+                if (!data || !data.msg || !data.msg.remoteJid) { return; }
+                const newMessageRaw = data.msg;
+                const chatId = newMessageRaw.remoteJid;
+                const messageData = transformBackendMessage(newMessageRaw, chatId);
+                db.messages.put(messageData);
+                if (selectedChatRef.current?.jid === messageData.chatId) {
+                    setMessages(prev => { if (prev.some(msg => msg.msgId === messageData.msgId)) { return prev; } return [...prev, messageData]; });
+                } else {
+                    db.chats.where({ jid: messageData.chatId }).modify(chat => { chat.unreadCount = (chat.unreadCount || 0) + 1; });
+                }
+                setChats(prev => {
+                    const chatIndex = prev.findIndex(c => c.jid === messageData.chatId);
+                    let newChats = [...prev];
+                    const newTimestamp = new Date(messageData.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const lastMessageText = messageData.text || messageData.media?.caption || `📄 ${messageData.type}`;
+                    if (chatIndex > -1) {
+                        const existingChat = newChats[chatIndex];
+                        const isChatOpen = selectedChatRef.current?.jid === messageData.chatId;
+                        const updatedChat = { ...existingChat, lastMessage: lastMessageText, timestamp: newTimestamp, unreadCount: isChatOpen ? existingChat.unreadCount : (existingChat.unreadCount || 0) + 1 };
+                        newChats.splice(chatIndex, 1);
+                        newChats.unshift(updatedChat);
+                    } else {
+                        const newChat: Chat = { id: messageData.chatId, jid: messageData.chatId, name: newMessageRaw.senderName || messageData.chatId.split('@')[0], lastMessage: lastMessageText, timestamp: newTimestamp, phoneNumber: messageData.chatId.split('@')[0], dbChatId: data.chatId, unreadCount: 1 };
+                        newChats.unshift(newChat);
+                        db.chats.put(newChat);
+                    }
+                    return newChats;
+                });
+            });
+            socket.on('msg-status-updated', (updates: { id: string, jid: string, status: number }[]) => {
+                for (const update of updates) {
+                    const statusMap: { [key: number]: Message['status'] } = { 3: 'delivered', 4: 'read' };
+                    const newStatus = statusMap[update.status] || 'sent';
+                    db.messages.update(update.id, { status: newStatus });
+                    if (selectedChatRef.current?.jid === update.jid) {
+                        setMessages(prev => prev.map(m => m.msgId === update.id ? { ...m, status: newStatus } : m));
+                    }
+                }
+            });
+            socket.on('presence-update', (data: { jid: string, presence: string }) => {
+                const { jid, presence } = data;
+                if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                if (presence === 'composing') {
+                    setTypingInfo({ jid, isTyping: true });
+                    typingTimeoutRef.current = window.setTimeout(() => setTypingInfo({ jid, isTyping: false }), 3000);
+                } else {
+                    setTypingInfo({ jid, isTyping: false });
+                }
+            });
+            socket.on('disconnect', () => console.log('🔌 Desconectado del servidor de Sockets.'));
+        };
+        if (!socketRef.current) setupSockets();
+        return () => {
+            if (socketRef.current?.connected) socketRef.current.disconnect();
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        };
+    }, []);
+
+    const fetchChats = async () => {
+        setIsLoadingChats(true);
+        setError(null);
+        try {
+            const cachedChats = await db.chats.toArray();
+            if (cachedChats.length > 0) { setChats(cachedChats); }
+            const response = await fetch(`${config.API_URL}inbox/get_my_chats`, { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+            if (!response.ok) throw new Error('Error de red');
+            const data = await response.json();
+            if (data.success && Array.isArray(data.data)) {
+                if (data.userData?.selIns) setInstanceId(data.userData.selIns);
+                const serverChats: Chat[] = data.data.map((chat: any) => {
+                    let lastMessageText = 'Media';
+                    try { const parsed = JSON.parse(chat.last_message); lastMessageText = parsed?.msgContext?.text || `📄 ${parsed.type}`; }
+                    catch (e) { lastMessageText = chat.last_message || 'Chat iniciado'; }
+                    const cachedVersion = cachedChats.find(c => c.jid === chat.sender_jid);
+                    return { id: chat.id.toString(), jid: chat.sender_jid, name: chat.sender_name, lastMessage: lastMessageText, timestamp: chat.last_message_came ? new Date(chat.last_message_came).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', phoneNumber: chat.sender_mobile, dbChatId: chat.chat_id, unreadCount: cachedVersion?.unreadCount || 0, profilePicUrl: cachedVersion?.profilePicUrl };
+                });
+                await db.chats.bulkPut(serverChats);
+                setChats(serverChats);
+            } else if (!cachedChats.length) { setError(data.msg || "No se pudieron cargar los chats."); }
+        } catch (err: any) { if (!chats.length) setError(err.message); } 
+        finally { setIsLoadingChats(false); }
+    };
+    useEffect(() => { fetchChats() }, []);
+
+    const handleSelectChat = async (chat: Chat) => {
+        if (selectedChat?.id === chat.id) return;
+        if (chat.unreadCount && chat.unreadCount > 0) {
+            await db.chats.update(chat.jid, { unreadCount: 0 });
+            setChats(prev => prev.map(c => c.jid === chat.jid ? { ...c, unreadCount: 0 } : c));
+        }
+        setSelectedChat({ ...chat, unreadCount: 0 });
+        setIsLoadingMessages(true);
+        try {
+            const cachedMessages = await db.messages.where('chatId').equals(chat.jid).toArray();
+            setMessages(cachedMessages.sort((a, b) => a.timestamp - b.timestamp));
+            const response = await fetch(`${config.API_URL}inbox/get_convo?id=${chat.jid}`, { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+            const data = await response.json();
+            if (data.success && Array.isArray(data.data)) {
+                const transformedMessages: Message[] = data.data.map((msg: any) => transformBackendMessage(msg, chat.jid));
+                await db.messages.bulkPut(transformedMessages);
+                setMessages(transformedMessages.sort((a, b) => a.timestamp - b.timestamp));
+            }
+        } catch (err) { console.error("Error cargando conversación:", err); } 
+        finally { setIsLoadingMessages(false); }
+    };
+    
+    const handleSendMessage = async (text: string) => {
+        if (!selectedChat || !instanceId) return;
+        try {
+            const response = await fetch(`${config.API_URL}inbox/send_text`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                body: JSON.stringify({ text, toJid: selectedChat.jid, toName: selectedChat.name, chatId: selectedChat.jid, instance: instanceId })
+            });
+            if (!response.ok) { throw new Error(`El servidor respondió con el estado ${response.status}`); }
+            const data = await response.json();
+            if (!data.success) { throw new Error(data.msg || "El backend indicó un error al enviar el mensaje."); }
+        } catch (err: any) {
+            console.error("Error al enviar mensaje:", err);
+            alert(`No se pudo enviar el mensaje: ${err.message}`);
+        }
+    };
+    
+    const apiCall = async (endpoint: string, body: object) => { try { const response = await fetch(`${config.API_URL}inbox/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: JSON.stringify(body) }); const data = await response.json(); if (!data.success) throw new Error(data.msg || 'Error en la API'); return data; } catch (error) { console.error(`Error en ${endpoint}:`, error); alert(`Error: ${(error as Error).message}`); } };
+    
+    const handleSendMedia = async (file: File) => {
+        if (!selectedChat || !instanceId) return;
+        const tempId = `temp_${Date.now()}`;
+        let mediaType: Message['type'] = 'doc';
+        if (file.type.startsWith('image/')) mediaType = 'image';
+        if (file.type.startsWith('video/')) mediaType = 'video';
+        if (file.type.startsWith('audio/')) mediaType = 'audio';
+        
+        const optimisticMessage: Message = {
+            msgId: tempId, chatId: selectedChat.jid, fromMe: true, timestamp: Math.floor(Date.now() / 1000),
+            type: mediaType, status: 'pending', media: { url: URL.createObjectURL(file), mimetype: file.type, fileName: file.name, }
+        };
+
+        setMessages(prev => [...prev, optimisticMessage]);
+        await db.messages.put(optimisticMessage);
+
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const uploadResponse = await fetch(`${config.API_URL}/user/return_url`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: formData });
+            const uploadData = await uploadResponse.json();
+            if (!uploadData.success) throw new Error('Error al subir el archivo.');
+            
+            const payload = { toJid: selectedChat.jid, toName: selectedChat.name, chatId: selectedChat.jid, instance: instanceId, fileName: uploadData.filename, originalFile: uploadData.originalName, caption: '' };
+            await apiCall(`send_${mediaType}`, payload);
+        } catch (error) {
+            console.error("Fallo al enviar media:", error);
+            await db.messages.update(tempId, { status: 'error' });
+            setMessages(prev => prev.map(m => m.msgId === tempId ? { ...m, status: 'error' } : m));
+        }
+    };
+
+    const handleDeleteChat = () => { if (!selectedChat) return; setDeleteModalOpen(true); };
+    const confirmDeleteChat = async () => { if (!selectedChat) return; await apiCall('del_chat', { chatId: selectedChat.dbChatId }); await db.messages.where('chatId').equals(selectedChat.jid).delete(); await db.chats.delete(selectedChat.jid); setChats(prev => prev.filter(c => c.jid !== selectedChat.jid)); setSelectedChat(null); setDeleteModalOpen(false); };
+    const handleUpdateChatNote = async () => { if (!selectedChat) return; const currentNoteResponse = await apiCall('get_chat_note', { chatId: selectedChat.dbChatId }); const currentNote = currentNoteResponse?.data || ''; const newNote = prompt("Añade o edita la nota para este chat:", currentNote); if (newNote !== null) { await apiCall('update_chat_note', { chatId: selectedChat.dbChatId, note: newNote }); alert('Nota actualizada con éxito.'); } };
+    
+    const handleGetSenderDetails = async () => {
+        if (!selectedChat || !instanceId) return;
+        const data = await apiCall('get_sender_details', { sessionId: instanceId, jid: selectedChat.jid });
+        if (data) {
+            const details = {
+                name: selectedChat.name,
+                status: data.status?.status,
+                profilePhoto: data.profilePhoto
+            };
+            setContactDetails(details);
+            setDetailsModalOpen(true);
+
+            if (data.profilePhoto) {
+                const profilePicUrl = data.profilePhoto;
+                setChats(prev => prev.map(c =>
+                    c.jid === selectedChat.jid ? { ...c, profilePicUrl } : c
+                ));
+                setSelectedChat(prev => prev ? { ...prev, profilePicUrl } : null);
+                await db.chats.update(selectedChat.jid, { profilePicUrl });
+            }
+        }
+    };
+
+    return (
+        <Box display="flex" height="calc(100vh - 64px)" width="100%" bgcolor={theme.palette.background.default} overflow="hidden" sx={{ flexDirection: { xs: "column", sm: "row" } }}>
+            <DeleteChatModal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} onConfirm={confirmDeleteChat} chatName={selectedChat?.name || ''} />
+            <ContactDetailsModal open={detailsModalOpen} onClose={() => setDetailsModalOpen(false)} details={contactDetails} />
+
+            <Paper elevation={1} sx={{ 
+                width: { xs: "100%", sm: "400px" }, 
+                p: 2, 
+                borderRight: `1px solid ${theme.palette.divider}`, 
+                bgcolor: 'background.paper', 
+                display: "flex", 
+                flexDirection: "column", 
+                height: "100%",
+                boxSizing: 'border-box' // <-- AQUÍ LA CORRECCIÓN
+            }}>
+                <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
+                    <Typography variant="h5">Chats</Typography>
+                    <Chip label={connectionStatus} color={connectionStatus === 'open' ? 'success' : 'warning'} size="small" />
+                </Box>
+                <TextField variant="outlined" size="small" placeholder="Buscar o iniciar un chat nuevo" fullWidth InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>), }} sx={{mb: 2}} />
+                <Box flex={1} sx={{ overflowY: 'auto' }}>
+                    {isLoadingChats ? <Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box> :
+                        error ? <Typography color="error" padding={2}>{error}</Typography> :
+                        <List sx={{ paddingRight: 1 }}>
+                            {chats.map(chat => <ChatListItem key={chat.id} chat={chat} isSelected={selectedChat?.id === chat.id} onClick={() => handleSelectChat(chat)} />)}
+                        </List>
+                    }
+                </Box>
+            </Paper>
+            <Box flex={1} display="flex" flexDirection="column" height="100%">
+                {selectedChat ?
+                    <ConversationView
+                        chat={selectedChat} messages={messages} isLoading={isLoadingMessages} typingInfo={typingInfo}
+                        onSendMessage={handleSendMessage} onSendMedia={handleSendMedia}
+                        onDeleteChat={handleDeleteChat} onUpdateNote={handleUpdateChatNote}
+                        onGetSenderDetails={handleGetSenderDetails}
+                    /> :
+                    <Box flex={1} display="flex" justifyContent="center" alignItems="center" flexDirection="column" sx={{textAlign: 'center', p: 2}}>
+                        <img src={welcomeCats} alt="Welcome" style={{ width: "250px", marginBottom: "16px", filter: isDark ? "invert(1)" : "none" }} />
+                        <Typography variant="h4" sx={{ fontWeight: "bold" }}>Tu Bandeja de Entrada</Typography>
+                        <Typography color="textSecondary">Selecciona un chat para comenzar a conversar en tiempo real.</Typography>
+                    </Box>
+                }
+            </Box>
+        </Box>
+    );
+};
+
+export default BandejadeEntrada;
