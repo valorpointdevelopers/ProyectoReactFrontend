@@ -7,12 +7,10 @@ export interface Chat {
   phoneNumber: string;
   dbChatId: string; 
   unreadCount?: number; 
-  // NUEVO: Propiedad para la URL de la foto de perfil
   profilePicUrl?: string; 
 }
 
 export interface Message {
-  // ... (interfaz sin cambios)
   msgId: string;
   chatId: string;
   fromMe: boolean;

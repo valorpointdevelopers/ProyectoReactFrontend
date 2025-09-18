@@ -17,8 +17,6 @@ import ArticleIcon from '@mui/icons-material/Article';
 import { io, Socket } from "socket.io-client";
 
 import welcomeCats from "../images/no-chat-found.svg";
-// Asegúrate de que tu tipo 'Chat' incluya la propiedad opcional 'profilePicUrl'
-// export interface Chat { ...; profilePicUrl?: string; }
 import { Chat, Message } from '../types';
 import config from "../config.json";
 import { db } from '../db';
@@ -509,7 +507,7 @@ const BandejadeEntrada: React.FC = () => {
                 display: "flex", 
                 flexDirection: "column", 
                 height: "100%",
-                boxSizing: 'border-box' // <-- AQUÍ LA CORRECCIÓN
+                boxSizing: 'border-box'
             }}>
                 <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
                     <Typography variant="h5">Chats</Typography>
