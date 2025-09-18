@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import config from "../config";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -110,15 +110,49 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const isLight = mode === "light";
-  const navigate = useNavigate(); // Inicializamos el hook de navegación
+  const navigate = useNavigate();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
 
-  // Estados para controlar los modales
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [plansOpen, setPlansOpen] = useState(false);
+
+  const [userData, setUserData] = useState({
+    name: '',
+    email: '',
+    mobile: ''
+  });
+
+  useEffect(() => {
+    const fetchPerfil = async () => {
+      try {
+        const response = await fetch(config.API_URL+"/user/get_me", {
+          method: "GET",
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token'),
+          },
+        });
+
+        const { data } = await response.json();
+        console.log(data);
+
+        setUserData({
+          name: data.name || '',
+          email: data.email || '',
+          mobile: data.mobile || ''
+        });
+
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    if (profileOpen) {
+      fetchPerfil();
+    }
+
+  }, [profileOpen]);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -146,7 +180,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     setProfileOpen(false);
   };
 
-  // Funciones para el nuevo modal de planes
   const handlePlansClick = () => {
     setPlansOpen(true);
   };
@@ -155,13 +188,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     setPlansOpen(false);
   };
 
-  //"Ver todos los planes" en el modal de perfil
   const handleViewPlansFromProfile = () => {
     handleProfileClose();
     handlePlansClick();
   };
 
-  //"Ver todos los planes" en el modal de suscripción
   const handleViewPlansFromSubscription = () => {
     handleSubscriptionClose();
     handlePlansClick();
@@ -171,7 +202,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleLogout = () => {
     handleMenuClose();
-    navigate('/'); 
+
+    localStorage.removeItem('token'); 
+
+    navigate('/login'); 
   };
 
   const SubscriptionItem = ({ icon, label, value }: any) => {
@@ -319,7 +353,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         position="fixed" 
         sx={{ 
           zIndex: 1201,
-          borderRadius: 0 // <-- AÑADIDO: Para que la barra sea cuadrada y ocupe todo el ancho
+          borderRadius: 0 
         }}
       >
         <Toolbar>
@@ -601,7 +635,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Perfil */}
       <Dialog
         open={profileOpen}
         onClose={handleProfileClose}
@@ -631,9 +664,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Nombre"
-                value= ""
-                variant="outlined"
+                value={userData.name}
                 InputProps={{
+                  readOnly: true,
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
                       <DriveFileRenameOutlineIcon fontSize="small" />
@@ -646,9 +679,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Correo electrónico"
-                value=""
-                variant="outlined"
+                value={userData.email}
                 InputProps={{
+                  readOnly: true,
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
                       <MailOutlineIcon fontSize="small" />
@@ -661,9 +694,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Tu número de móvil"
-                value=""
-                variant="outlined"
+                value={userData.mobile}
                 InputProps={{
+                  readOnly: true,
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
                       <WhatsAppIcon fontSize="small" />
@@ -765,7 +798,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Grid>
         </DialogContent>
       </Dialog>
-
     </Box>
   );
 };
