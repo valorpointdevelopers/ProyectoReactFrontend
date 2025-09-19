@@ -8,9 +8,14 @@ export class MySubClassedDexie extends Dexie {
   constructor() {
     super('sistemacrm');
     
-    this.version(2).stores({
+    this.version(3).stores({
       messages: 'msgId, chatId',
-      chats: '&jid, unreadCount'
+      chats: '&jid, unreadCount, chatStatus' 
+    });
+
+    this.version(2).stores({
+        messages: 'msgId, chatId',
+        chats: '&jid, unreadCount'
     });
   }
 }

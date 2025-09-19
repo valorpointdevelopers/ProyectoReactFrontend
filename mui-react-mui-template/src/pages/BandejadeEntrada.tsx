@@ -17,13 +17,32 @@ import ArticleIcon from '@mui/icons-material/Article';
 import { io, Socket } from "socket.io-client";
 
 import welcomeCats from "../images/no-chat-found.svg";
-// Asegúrate de que tu tipo 'Chat' incluya la propiedad opcional 'profilePicUrl'
-// export interface Chat { ...; profilePicUrl?: string; }
 import { Chat, Message } from '../types';
 import config from "../config.json";
 import { db } from '../db';
 
 // ======================= SUB-COMPONENTES ==========================
+
+const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
+    if (!status) return null;
+
+    const statusConfig = {
+        open: { label: 'Abierto', color: 'primary', emoji: '🟢' },
+        solved: { label: 'Resuelto', color: 'success', emoji: '✅' },
+        pending: { label: 'Pendiente', color: 'warning', emoji: '🤔' },
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, color: 'default', emoji: '' };
+
+    return (
+        <Chip 
+            label={`${config.emoji} ${config.label}`}
+            color={config.color as any}
+            size="small"
+            sx={{ mr: 1, fontWeight: 'bold' }}
+        />
+    );
+};
 
 const ChatListItem: React.FC<{ chat: Chat; isSelected: boolean; onClick: () => void; }> = ({ chat, isSelected, onClick }) => {
     return (
@@ -72,18 +91,36 @@ const MessageStatus: React.FC<{ status?: Message['status']; }> = ({ status }) =>
     return null;
 };
 
-const ChatActions: React.FC<{ onDeleteChat: () => void; onUpdateNote: () => void; onGetSenderDetails: () => void; }> = ({ onDeleteChat, onUpdateNote, onGetSenderDetails }) => {
+const ChatActions: React.FC<{ onDeleteChat: () => void; onUpdateStatus: (status: 'open' | 'solved' | 'pending') => void; onGetSenderDetails: () => void; }> = ({ onDeleteChat, onUpdateStatus, onGetSenderDetails }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-    const handleClick = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
-    const handleClose = () => setAnchorEl(null);
+    const [statusMenuAnchorEl, setStatusMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const isMainMenuOpen = Boolean(anchorEl);
+    const isStatusMenuOpen = Boolean(statusMenuAnchorEl);
+
+    const handleMainMenuClick = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
+    const handleMainMenuClose = () => setAnchorEl(null);
+
+    const handleStatusMenuClick = (event: React.MouseEvent<HTMLElement>) => setStatusMenuAnchorEl(event.currentTarget);
+    const handleStatusMenuClose = () => setStatusMenuAnchorEl(null);
+
+    const handleStatusSelect = (status: 'open' | 'solved' | 'pending') => {
+        onUpdateStatus(status);
+        handleStatusMenuClose();
+        handleMainMenuClose();
+    };
+
     return (
         <Box>
-            <IconButton onClick={handleClick}><MoreVertIcon /></IconButton>
-            <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-                <MenuItem onClick={() => { onGetSenderDetails(); handleClose(); }}>Ver Detalles del Contacto</MenuItem>
-                <MenuItem onClick={() => { onUpdateNote(); handleClose(); }}>Añadir/Editar Nota</MenuItem>
-                <MenuItem onClick={() => { onDeleteChat(); handleClose(); }} sx={{ color: 'error.main' }}>Eliminar Chat</MenuItem>
+            <IconButton onClick={handleMainMenuClick}><MoreVertIcon /></IconButton>
+            <Menu anchorEl={anchorEl} open={isMainMenuOpen} onClose={handleMainMenuClose}>
+                <MenuItem onClick={() => { onGetSenderDetails(); handleMainMenuClose(); }}>Ver Detalles del Contacto</MenuItem>
+                <MenuItem onClick={handleStatusMenuClick}>Cambiar Estado</MenuItem>
+                <MenuItem onClick={() => { onDeleteChat(); handleMainMenuClose(); }} sx={{ color: 'error.main' }}>Eliminar Chat</MenuItem>
+            </Menu>
+            <Menu anchorEl={statusMenuAnchorEl} open={isStatusMenuOpen} onClose={handleStatusMenuClose}>
+                <MenuItem onClick={() => handleStatusSelect('open')}>🟢 Abierto</MenuItem>
+                <MenuItem onClick={() => handleStatusSelect('pending')}>🤔 Pendiente</MenuItem>
+                <MenuItem onClick={() => handleStatusSelect('solved')}>✅ Resuelto</MenuItem>
             </Menu>
         </Box>
     );
@@ -214,8 +251,8 @@ const MessageBubble: React.FC<{ msg: Message }> = ({ msg }) => {
     );
 };
 
-const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: boolean; typingInfo: { jid: string, isTyping: boolean } | null; onSendMessage: (text: string) => void; onSendMedia: (file: File) => void; onDeleteChat: () => void; onUpdateNote: () => void; onGetSenderDetails: () => void; }> = (props) => {
-    const { chat, messages, onSendMessage, isLoading, typingInfo, onSendMedia, onDeleteChat, onUpdateNote, onGetSenderDetails } = props;
+const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: boolean; typingInfo: { jid: string, isTyping: boolean } | null; onSendMessage: (text: string) => void; onSendMedia: (file: File) => void; onDeleteChat: () => void; onUpdateStatus: (status: 'open' | 'solved' | 'pending') => void; onGetSenderDetails: () => void; }> = (props) => {
+    const { chat, messages, onSendMessage, isLoading, typingInfo, onSendMedia, onDeleteChat, onUpdateStatus, onGetSenderDetails } = props;
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
     
@@ -232,19 +269,34 @@ const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: 
                             {typingInfo?.jid === chat.jid && typingInfo?.isTyping ? <em style={{ color: 'primary.main' }}>escribiendo...</em> : chat.phoneNumber}
                         </Typography>
                     </Box>
-                    <ChatActions onDeleteChat={onDeleteChat} onUpdateNote={onUpdateNote} onGetSenderDetails={onGetSenderDetails} />
+                    <StatusChip status={chat.chatStatus} />
+                    <ChatActions onDeleteChat={onDeleteChat} onUpdateStatus={onUpdateStatus} onGetSenderDetails={onGetSenderDetails} />
                 </Toolbar>
             </AppBar>
-            <Box flex={1} p={2} sx={{ overflowY: 'auto', backgroundColor: 'action.disabledBackground' }}>
-                {isLoading ? <Box display="flex" justifyContent="center" alignItems="center" height="100%"><CircularProgress /></Box> :
-                    messages.length > 0 ? messages.map((msg) => <MessageBubble key={msg.msgId} msg={msg} />) :
-                    <Box display="flex" justifyContent="center" alignItems="center" height="100%" flexDirection="column" color="text.secondary">
-                        <ChatBubbleOutlineIcon sx={{ fontSize: 50, mb: 2 }} />
-                        <Typography>No hay mensajes en este chat.</Typography>
-                    </Box>
-                }
-                <div ref={messagesEndRef} />
+
+            <Box 
+                flex={1} 
+                p={2} 
+                sx={{ 
+                    overflowY: 'auto', 
+                    backgroundColor: 'action.disabledBackground',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-end'
+                }}
+            >
+                <Box> 
+                    {isLoading ? <Box display="flex" justifyContent="center" alignItems="center" height="100%"><CircularProgress /></Box> :
+                        messages.length > 0 ? messages.map((msg) => <MessageBubble key={msg.msgId} msg={msg} />) :
+                        <Box display="flex" justifyContent="center" alignItems="center" height="100%" flexDirection="column" color="text.secondary">
+                            <ChatBubbleOutlineIcon sx={{ fontSize: 50, mb: 2 }} />
+                            <Typography>No hay mensajes en este chat.</Typography>
+                        </Box>
+                    }
+                    <div ref={messagesEndRef} />
+                </Box>
             </Box>
+
             <Box p={1} sx={{ backgroundColor: 'background.default', display: 'flex', alignItems: 'center' }}>
                 <AttachmentMenu onSendMedia={onSendMedia} />
                 <MessageInput onSendMessage={onSendMessage} disabled={isLoading} />
@@ -252,6 +304,7 @@ const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: 
         </Box>
     );
 };
+
 
 // ======================= COMPONENTE PRINCIPAL ==========================
 const BandejadeEntrada: React.FC = () => {
@@ -267,7 +320,6 @@ const BandejadeEntrada: React.FC = () => {
     const [connectionStatus, setConnectionStatus] = useState("connecting");
     const [typingInfo, setTypingInfo] = useState<{ jid: string, isTyping: boolean } | null>(null);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
     const [contactDetails, setContactDetails] = useState<{ name: string; status?: string; profilePhoto?: string; } | null>(null);
     
@@ -334,7 +386,7 @@ const BandejadeEntrada: React.FC = () => {
                         newChats.splice(chatIndex, 1);
                         newChats.unshift(updatedChat);
                     } else {
-                        const newChat: Chat = { id: messageData.chatId, jid: messageData.chatId, name: newMessageRaw.senderName || messageData.chatId.split('@')[0], lastMessage: lastMessageText, timestamp: newTimestamp, phoneNumber: messageData.chatId.split('@')[0], dbChatId: data.chatId, unreadCount: 1 };
+                        const newChat: Chat = { id: messageData.chatId, jid: messageData.chatId, name: newMessageRaw.senderName || messageData.chatId.split('@')[0], lastMessage: lastMessageText, timestamp: newTimestamp, phoneNumber: messageData.chatId.split('@')[0], dbChatId: data.chatId, unreadCount: 1, chatStatus: 'open' };
                         newChats.unshift(newChat);
                         db.chats.put(newChat);
                     }
@@ -386,7 +438,7 @@ const BandejadeEntrada: React.FC = () => {
                     try { const parsed = JSON.parse(chat.last_message); lastMessageText = parsed?.msgContext?.text || `📄 ${parsed.type}`; }
                     catch (e) { lastMessageText = chat.last_message || 'Chat iniciado'; }
                     const cachedVersion = cachedChats.find(c => c.jid === chat.sender_jid);
-                    return { id: chat.id.toString(), jid: chat.sender_jid, name: chat.sender_name, lastMessage: lastMessageText, timestamp: chat.last_message_came ? new Date(chat.last_message_came).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', phoneNumber: chat.sender_mobile, dbChatId: chat.chat_id, unreadCount: cachedVersion?.unreadCount || 0, profilePicUrl: cachedVersion?.profilePicUrl };
+                    return { id: chat.id.toString(), jid: chat.sender_jid, name: chat.sender_name, lastMessage: lastMessageText, timestamp: chat.last_message_came ? new Date(chat.last_message_came).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', phoneNumber: chat.sender_mobile, dbChatId: chat.chat_id, unreadCount: cachedVersion?.unreadCount || 0, profilePicUrl: cachedVersion?.profilePicUrl, chatStatus: chat.chat_note || 'open' };
                 });
                 await db.chats.bulkPut(serverChats);
                 setChats(serverChats);
@@ -435,7 +487,7 @@ const BandejadeEntrada: React.FC = () => {
         }
     };
     
-    const apiCall = async (endpoint: string, body: object) => { try { const response = await fetch(`${config.API_URL}inbox/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: JSON.stringify(body) }); const data = await response.json(); if (!data.success) throw new Error(data.msg || 'Error en la API'); return data; } catch (error) { console.error(`Error en ${endpoint}:`, error); alert(`Error: ${(error as Error).message}`); } };
+    const apiCall = async (endpoint: string, body: object) => { try { const response = await fetch(`${config.API_URL}inbox/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: JSON.stringify(body) }); if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); const data = await response.json(); if (!data.success) throw new Error(data.msg || 'Error en la API'); return data; } catch (error) { console.error(`Error en ${endpoint}:`, error); alert(`Error: ${(error as Error).message}`); throw error; } };
     
     const handleSendMedia = async (file: File) => {
         if (!selectedChat || !instanceId) return;
@@ -471,7 +523,30 @@ const BandejadeEntrada: React.FC = () => {
 
     const handleDeleteChat = () => { if (!selectedChat) return; setDeleteModalOpen(true); };
     const confirmDeleteChat = async () => { if (!selectedChat) return; await apiCall('del_chat', { chatId: selectedChat.dbChatId }); await db.messages.where('chatId').equals(selectedChat.jid).delete(); await db.chats.delete(selectedChat.jid); setChats(prev => prev.filter(c => c.jid !== selectedChat.jid)); setSelectedChat(null); setDeleteModalOpen(false); };
-    const handleUpdateChatNote = async () => { if (!selectedChat) return; const currentNoteResponse = await apiCall('get_chat_note', { chatId: selectedChat.dbChatId }); const currentNote = currentNoteResponse?.data || ''; const newNote = prompt("Añade o edita la nota para este chat:", currentNote); if (newNote !== null) { await apiCall('update_chat_note', { chatId: selectedChat.dbChatId, note: newNote }); alert('Nota actualizada con éxito.'); } };
+    
+    const handleUpdateChatStatus = async (newStatus: 'open' | 'solved' | 'pending') => {
+        if (!selectedChat) return;
+
+        const originalStatus = selectedChat.chatStatus;
+        const updatedChat = { ...selectedChat, chatStatus: newStatus };
+        setSelectedChat(updatedChat);
+        setChats(prevChats => prevChats.map(c => c.id === selectedChat.id ? updatedChat : c));
+        await db.chats.update(selectedChat.jid, { chatStatus: newStatus });
+
+        try {
+            await apiCall('update_chat_note', {
+                chatId: selectedChat.dbChatId,
+                note: newStatus 
+            });
+        } catch (error) {
+            console.error("Fallo al actualizar el estado en el servidor:", error);
+            const revertedChat = { ...selectedChat, chatStatus: originalStatus };
+            setSelectedChat(revertedChat);
+            setChats(prevChats => prevChats.map(c => c.id === selectedChat.id ? revertedChat : c));
+            await db.chats.update(selectedChat.jid, { chatStatus: originalStatus });
+            alert("No se pudo actualizar el estado del chat. Por favor, inténtalo de nuevo.");
+        }
+    };
     
     const handleGetSenderDetails = async () => {
         if (!selectedChat || !instanceId) return;
@@ -502,14 +577,11 @@ const BandejadeEntrada: React.FC = () => {
             <ContactDetailsModal open={detailsModalOpen} onClose={() => setDetailsModalOpen(false)} details={contactDetails} />
 
             <Paper elevation={1} sx={{ 
-                width: { xs: "100%", sm: "400px" }, 
-                p: 2, 
+                width: { xs: "100%", sm: "400px" }, p: 2, 
                 borderRight: `1px solid ${theme.palette.divider}`, 
-                bgcolor: 'background.paper', 
-                display: "flex", 
-                flexDirection: "column", 
-                height: "100%",
-                boxSizing: 'border-box' // <-- AQUÍ LA CORRECCIÓN
+                bgcolor: 'background.paper', display: "flex", 
+                flexDirection: "column", height: "100%",
+                boxSizing: 'border-box'
             }}>
                 <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
                     <Typography variant="h5">Chats</Typography>
@@ -530,7 +602,7 @@ const BandejadeEntrada: React.FC = () => {
                     <ConversationView
                         chat={selectedChat} messages={messages} isLoading={isLoadingMessages} typingInfo={typingInfo}
                         onSendMessage={handleSendMessage} onSendMedia={handleSendMedia}
-                        onDeleteChat={handleDeleteChat} onUpdateNote={handleUpdateChatNote}
+                        onDeleteChat={handleDeleteChat} onUpdateStatus={handleUpdateChatStatus}
                         onGetSenderDetails={handleGetSenderDetails}
                     /> :
                     <Box flex={1} display="flex" justifyContent="center" alignItems="center" flexDirection="column" sx={{textAlign: 'center', p: 2}}>

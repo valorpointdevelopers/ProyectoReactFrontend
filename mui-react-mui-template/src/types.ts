@@ -8,6 +8,7 @@ export interface Chat {
   dbChatId: string; 
   unreadCount?: number; 
   profilePicUrl?: string; 
+  chatStatus?: string;
 }
 
 export interface Message {
