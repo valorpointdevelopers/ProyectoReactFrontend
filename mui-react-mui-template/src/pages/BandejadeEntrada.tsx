@@ -338,17 +338,14 @@ const BandejadeEntrada: React.FC = () => {
     }, [selectedChat]);
 
     const transformBackendMessage = (msg: any, jid: string): Message => {
-        // <-- ARREGLO 1: Se construye la URL base de forma segura para evitar dobles barras '//'
         const baseURL = new URL(config.API_URL).origin;
         const messageType = msg.type?.toLowerCase();
         
         if (['image', 'video', 'doc', 'aud', 'doc_cap'].includes(messageType)) {
             const mediaType = messageType === 'doc_cap' ? 'doc' : messageType;
             let mimetype = msg.msgContext.mimetype;
-
-            // <-- ARREGLO 2: Se asegura que los mensajes de imagen siempre tengan un mimetype
             if (mediaType === 'image' && !mimetype) {
-                mimetype = 'image/jpeg'; // Asigna un valor por defecto si no viene del backend
+                mimetype = 'image/jpeg';
             }
             
             return {
@@ -357,7 +354,7 @@ const BandejadeEntrada: React.FC = () => {
                 media: { 
                     url: `${baseURL}/media/${msg.msgContext.fileName}`, 
                     fileName: msg.msgContext.fileName, 
-                    mimetype: mimetype, // Se usa el mimetype corregido
+                    mimetype: mimetype,
                     caption: msg.msgContext.caption || '' 
                 }
             };
