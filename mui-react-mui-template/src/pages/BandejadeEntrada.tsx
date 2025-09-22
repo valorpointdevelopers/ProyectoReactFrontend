@@ -338,14 +338,28 @@ const BandejadeEntrada: React.FC = () => {
     }, [selectedChat]);
 
     const transformBackendMessage = (msg: any, jid: string): Message => {
-        const baseURL = config.API_URL.replace('/api', '');
+        // <-- ARREGLO 1: Se construye la URL base de forma segura para evitar dobles barras '//'
+        const baseURL = new URL(config.API_URL).origin;
         const messageType = msg.type?.toLowerCase();
+        
         if (['image', 'video', 'doc', 'aud', 'doc_cap'].includes(messageType)) {
             const mediaType = messageType === 'doc_cap' ? 'doc' : messageType;
+            let mimetype = msg.msgContext.mimetype;
+
+            // <-- ARREGLO 2: Se asegura que los mensajes de imagen siempre tengan un mimetype
+            if (mediaType === 'image' && !mimetype) {
+                mimetype = 'image/jpeg'; // Asigna un valor por defecto si no viene del backend
+            }
+            
             return {
                 msgId: msg.msgId, chatId: jid, fromMe: msg.route === 'outgoing',
                 timestamp: msg.timestamp, type: mediaType, status: msg.status,
-                media: { url: `${baseURL}/media/${msg.msgContext.fileName}`, fileName: msg.msgContext.fileName, mimetype: msg.msgContext.mimetype, caption: msg.msgContext.caption || '' }
+                media: { 
+                    url: `${baseURL}/media/${msg.msgContext.fileName}`, 
+                    fileName: msg.msgContext.fileName, 
+                    mimetype: mimetype, // Se usa el mimetype corregido
+                    caption: msg.msgContext.caption || '' 
+                }
             };
         }
         return {
@@ -357,7 +371,7 @@ const BandejadeEntrada: React.FC = () => {
     
     useEffect(() => {
         const setupSockets = () => {
-            const socketUrl = config.API_URL.replace('/api/', '');
+            const socketUrl = new URL(config.API_URL).origin;
             const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
             socketRef.current = socket;
             const userId = localStorage.getItem('uid');
@@ -438,7 +452,6 @@ const BandejadeEntrada: React.FC = () => {
                     try { const parsed = JSON.parse(chat.last_message); lastMessageText = parsed?.msgContext?.text || `📄 ${parsed.type}`; }
                     catch (e) { lastMessageText = chat.last_message || 'Chat iniciado'; }
                     const cachedVersion = cachedChats.find(c => c.jid === chat.sender_jid);
-                    // CAMBIO AQUÍ: Leer desde la columna correcta `chat_status`
                     return { id: chat.id.toString(), jid: chat.sender_jid, name: chat.sender_name, lastMessage: lastMessageText, timestamp: chat.last_message_came ? new Date(chat.last_message_came).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', phoneNumber: chat.sender_mobile, dbChatId: chat.chat_id, unreadCount: cachedVersion?.unreadCount || 0, profilePicUrl: cachedVersion?.profilePicUrl, chatStatus: chat.chat_status || 'open' };
                 });
                 await db.chats.bulkPut(serverChats);
@@ -488,7 +501,6 @@ const BandejadeEntrada: React.FC = () => {
         }
     };
     
-    // CAMBIO AQUÍ: Función apiCall hecha más flexible
     const apiCall = async (path: string, body: object, method: string = 'POST') => { 
         try { 
             const response = await fetch(`${config.API_URL}${path}`, { 
@@ -526,7 +538,6 @@ const BandejadeEntrada: React.FC = () => {
         const formData = new FormData();
         formData.append('file', file);
         try {
-            // Esta llamada es especial, no usa apiCall porque envía FormData
             const uploadResponse = await fetch(`${config.API_URL}user/return_url`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: formData });
             const uploadData = await uploadResponse.json();
             if (!uploadData.success) throw new Error('Error al subir el archivo.');
@@ -543,21 +554,15 @@ const BandejadeEntrada: React.FC = () => {
     const handleDeleteChat = () => { if (!selectedChat) return; setDeleteModalOpen(true); };
     const confirmDeleteChat = async () => { if (!selectedChat) return; await apiCall('inbox/del_chat', { chatId: selectedChat.dbChatId }); await db.messages.where('chatId').equals(selectedChat.jid).delete(); await db.chats.delete(selectedChat.jid); setChats(prev => prev.filter(c => c.jid !== selectedChat.jid)); setSelectedChat(null); setDeleteModalOpen(false); };
     
-    // CAMBIO AQUÍ: Usar la ruta y el payload correctos
     const handleUpdateChatStatus = async (newStatus: 'open' | 'solved' | 'pending') => {
         if (!selectedChat) return;
-
         const originalStatus = selectedChat.chatStatus;
         const updatedChat = { ...selectedChat, chatStatus: newStatus };
         setSelectedChat(updatedChat);
         setChats(prevChats => prevChats.map(c => c.id === selectedChat.id ? updatedChat : c));
         await db.chats.update(selectedChat.jid, { chatStatus: newStatus });
-
         try {
-            await apiCall('user/change_chat_ticket_status', {
-                chatId: selectedChat.dbChatId,
-                status: newStatus 
-            });
+            await apiCall('user/change_chat_ticket_status', { chatId: selectedChat.dbChatId, status: newStatus });
         } catch (error) {
             console.error("Fallo al actualizar el estado en el servidor:", error);
             const revertedChat = { ...selectedChat, chatStatus: originalStatus };
@@ -572,19 +577,12 @@ const BandejadeEntrada: React.FC = () => {
         if (!selectedChat || !instanceId) return;
         const data = await apiCall('inbox/get_sender_details', { sessionId: instanceId, jid: selectedChat.jid });
         if (data) {
-            const details = {
-                name: selectedChat.name,
-                status: data.status?.status,
-                profilePhoto: data.profilePhoto
-            };
+            const details = { name: selectedChat.name, status: data.status?.status, profilePhoto: data.profilePhoto };
             setContactDetails(details);
             setDetailsModalOpen(true);
-
             if (data.profilePhoto) {
                 const profilePicUrl = data.profilePhoto;
-                setChats(prev => prev.map(c =>
-                    c.jid === selectedChat.jid ? { ...c, profilePicUrl } : c
-                ));
+                setChats(prev => prev.map(c => c.jid === selectedChat.jid ? { ...c, profilePicUrl } : c));
                 setSelectedChat(prev => prev ? { ...prev, profilePicUrl } : null);
                 await db.chats.update(selectedChat.jid, { profilePicUrl });
             }
@@ -596,13 +594,7 @@ const BandejadeEntrada: React.FC = () => {
             <DeleteChatModal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} onConfirm={confirmDeleteChat} chatName={selectedChat?.name || ''} />
             <ContactDetailsModal open={detailsModalOpen} onClose={() => setDetailsModalOpen(false)} details={contactDetails} />
 
-            <Paper elevation={1} sx={{ 
-                width: { xs: "100%", sm: "400px" }, p: 2, 
-                borderRight: `1px solid ${theme.palette.divider}`, 
-                bgcolor: 'background.paper', display: "flex", 
-                flexDirection: "column", height: "100%",
-                boxSizing: 'border-box'
-            }}>
+            <Paper elevation={1} sx={{ width: { xs: "100%", sm: "400px" }, p: 2, borderRight: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', display: "flex", flexDirection: "column", height: "100%", boxSizing: 'border-box' }}>
                 <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
                     <Typography variant="h5">Chats</Typography>
                     <Chip label={connectionStatus} color={connectionStatus === 'open' ? 'success' : 'warning'} size="small" />
@@ -626,7 +618,7 @@ const BandejadeEntrada: React.FC = () => {
                         onGetSenderDetails={handleGetSenderDetails}
                     /> :
                     <Box flex={1} display="flex" justifyContent="center" alignItems="center" flexDirection="column" sx={{textAlign: 'center', p: 2}}>
-                        <img src={welcomeCats} alt="Welcome" style={{ width: "250px", marginBottom: "16px", filter: isDark ? "invert(1)" : "none" }} />
+                        <img src={welcomeCats} alt="Welcome" style={{ width: "250px", marginBottom: "16px" }} />
                         <Typography variant="h4" sx={{ fontWeight: "bold" }}>Tu Bandeja de Entrada</Typography>
                         <Typography color="textSecondary">Selecciona un chat para comenzar a conversar en tiempo real.</Typography>
                     </Box>
