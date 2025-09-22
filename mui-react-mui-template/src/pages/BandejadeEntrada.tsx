@@ -438,7 +438,8 @@ const BandejadeEntrada: React.FC = () => {
                     try { const parsed = JSON.parse(chat.last_message); lastMessageText = parsed?.msgContext?.text || `📄 ${parsed.type}`; }
                     catch (e) { lastMessageText = chat.last_message || 'Chat iniciado'; }
                     const cachedVersion = cachedChats.find(c => c.jid === chat.sender_jid);
-                    return { id: chat.id.toString(), jid: chat.sender_jid, name: chat.sender_name, lastMessage: lastMessageText, timestamp: chat.last_message_came ? new Date(chat.last_message_came).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', phoneNumber: chat.sender_mobile, dbChatId: chat.chat_id, unreadCount: cachedVersion?.unreadCount || 0, profilePicUrl: cachedVersion?.profilePicUrl, chatStatus: chat.chat_note || 'open' };
+                    // CAMBIO AQUÍ: Leer desde la columna correcta `chat_status`
+                    return { id: chat.id.toString(), jid: chat.sender_jid, name: chat.sender_name, lastMessage: lastMessageText, timestamp: chat.last_message_came ? new Date(chat.last_message_came).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', phoneNumber: chat.sender_mobile, dbChatId: chat.chat_id, unreadCount: cachedVersion?.unreadCount || 0, profilePicUrl: cachedVersion?.profilePicUrl, chatStatus: chat.chat_status || 'open' };
                 });
                 await db.chats.bulkPut(serverChats);
                 setChats(serverChats);
@@ -487,8 +488,25 @@ const BandejadeEntrada: React.FC = () => {
         }
     };
     
-    const apiCall = async (endpoint: string, body: object) => { try { const response = await fetch(`${config.API_URL}inbox/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: JSON.stringify(body) }); if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); const data = await response.json(); if (!data.success) throw new Error(data.msg || 'Error en la API'); return data; } catch (error) { console.error(`Error en ${endpoint}:`, error); alert(`Error: ${(error as Error).message}`); throw error; } };
-    
+    // CAMBIO AQUÍ: Función apiCall hecha más flexible
+    const apiCall = async (path: string, body: object, method: string = 'POST') => { 
+        try { 
+            const response = await fetch(`${config.API_URL}${path}`, { 
+                method, 
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }, 
+                body: JSON.stringify(body) 
+            }); 
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); 
+            const data = await response.json(); 
+            if (!data.success) throw new Error(data.msg || 'Error en la API'); 
+            return data; 
+        } catch (error) { 
+            console.error(`Error en ${path}:`, error); 
+            alert(`Error: ${(error as Error).message}`); 
+            throw error; 
+        } 
+    };
+
     const handleSendMedia = async (file: File) => {
         if (!selectedChat || !instanceId) return;
         const tempId = `temp_${Date.now()}`;
@@ -508,12 +526,13 @@ const BandejadeEntrada: React.FC = () => {
         const formData = new FormData();
         formData.append('file', file);
         try {
-            const uploadResponse = await fetch(`${config.API_URL}/user/return_url`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: formData });
+            // Esta llamada es especial, no usa apiCall porque envía FormData
+            const uploadResponse = await fetch(`${config.API_URL}user/return_url`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: formData });
             const uploadData = await uploadResponse.json();
             if (!uploadData.success) throw new Error('Error al subir el archivo.');
             
             const payload = { toJid: selectedChat.jid, toName: selectedChat.name, chatId: selectedChat.jid, instance: instanceId, fileName: uploadData.filename, originalFile: uploadData.originalName, caption: '' };
-            await apiCall(`send_${mediaType}`, payload);
+            await apiCall(`inbox/send_${mediaType}`, payload);
         } catch (error) {
             console.error("Fallo al enviar media:", error);
             await db.messages.update(tempId, { status: 'error' });
@@ -522,8 +541,9 @@ const BandejadeEntrada: React.FC = () => {
     };
 
     const handleDeleteChat = () => { if (!selectedChat) return; setDeleteModalOpen(true); };
-    const confirmDeleteChat = async () => { if (!selectedChat) return; await apiCall('del_chat', { chatId: selectedChat.dbChatId }); await db.messages.where('chatId').equals(selectedChat.jid).delete(); await db.chats.delete(selectedChat.jid); setChats(prev => prev.filter(c => c.jid !== selectedChat.jid)); setSelectedChat(null); setDeleteModalOpen(false); };
+    const confirmDeleteChat = async () => { if (!selectedChat) return; await apiCall('inbox/del_chat', { chatId: selectedChat.dbChatId }); await db.messages.where('chatId').equals(selectedChat.jid).delete(); await db.chats.delete(selectedChat.jid); setChats(prev => prev.filter(c => c.jid !== selectedChat.jid)); setSelectedChat(null); setDeleteModalOpen(false); };
     
+    // CAMBIO AQUÍ: Usar la ruta y el payload correctos
     const handleUpdateChatStatus = async (newStatus: 'open' | 'solved' | 'pending') => {
         if (!selectedChat) return;
 
@@ -534,9 +554,9 @@ const BandejadeEntrada: React.FC = () => {
         await db.chats.update(selectedChat.jid, { chatStatus: newStatus });
 
         try {
-            await apiCall('update_chat_note', {
+            await apiCall('user/change_chat_ticket_status', {
                 chatId: selectedChat.dbChatId,
-                note: newStatus 
+                status: newStatus 
             });
         } catch (error) {
             console.error("Fallo al actualizar el estado en el servidor:", error);
@@ -550,7 +570,7 @@ const BandejadeEntrada: React.FC = () => {
     
     const handleGetSenderDetails = async () => {
         if (!selectedChat || !instanceId) return;
-        const data = await apiCall('get_sender_details', { sessionId: instanceId, jid: selectedChat.jid });
+        const data = await apiCall('inbox/get_sender_details', { sessionId: instanceId, jid: selectedChat.jid });
         if (data) {
             const details = {
                 name: selectedChat.name,
