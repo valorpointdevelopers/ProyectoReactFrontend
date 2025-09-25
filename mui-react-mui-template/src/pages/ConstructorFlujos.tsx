@@ -1,35 +1,36 @@
-import React, { useMemo, useRef, useState, useLayoutEffect } from "react";
+import React, { useMemo, useRef, useState, useLayoutEffect, useEffect } from "react";
 import {
-  Box,
-  Paper,
-  Button,
-  Typography,
-  Divider,
-  useTheme,
-  TextField,
-  IconButton,
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Tooltip,
-  Zoom,
-  Fab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Switch,
-  FormControlLabel,
-  Stack,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  Box,
+  Paper,
+  Button,
+  Typography,
+  Divider,
+  useTheme,
+  TextField,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Tooltip,
+  Zoom,
+  Fab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Switch,
+  FormControlLabel,
+  Stack,
+  Chip,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  CircularProgress,
 } from "@mui/material";
 
 import SaveIcon from "@mui/icons-material/Save";
@@ -58,846 +59,1179 @@ import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 
 import Draggable from "react-draggable";
 import flo from "../images/flo.svg";
+import config from "../config.json";
 
-type BlockType =
-  | "Texto"
-  | "Imagen"
-  | "Documento"
-  | "Audio"
-  | "Video"
-  | "Ubicación"
-  | "Encuesta";
-
-type Block = {
-  id: string;
-  type: BlockType;
-  x: number;
-  y: number;
-  data?: any;
+// ---------------------------
+// Helpers para llamadas API
+// ---------------------------
+const getApiHeaders = () => {
+  const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "application/json" };
+  const token = localStorage.getItem("token");
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
 };
 
-type Template = {
-  id: string;
-  title: string;
-  type: string;
-  blocks: Block[];
+const handleResponse = async (response: Response) => {
+  const data = await response.json();
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || data.msg || "Error en la solicitud a la API");
+  }
+  return data;
+};
+
+const mapBlockTypeToServer = (t: string | undefined) => {
+  if (!t) return "text";
+  const s = String(t).toLowerCase();
+  if (s.includes("texto") || s.includes("text")) return "text";
+  if (s.includes("imagen") || s.includes("image")) return "image";
+  if (s.includes("documento") || s.includes("document")) return "document";
+  if (s.includes("audio")) return "audio";
+  if (s.includes("video")) return "video";
+  if (s.includes("ubic") || s.includes("location")) return "location";
+  if (s.includes("encuesta") || s.includes("poll")) return "poll";
+  return "text";
+};
+
+const apiService = {
+  getMyFlows: async () => {
+    const response = await fetch(`${config.API_URL}flow/get_mine`, {
+      method: "GET",
+      headers: getApiHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  addFlow: async (payload: { title: string; nodes: any; edges: any; flowId: string }) => {
+    const response = await fetch(`${config.API_URL}flow/add_flow`, {
+      method: "POST",
+      headers: getApiHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(response);
+  },
+
+  getFlowById: async (flowId: string) => {
+    const response = await fetch(`${config.API_URL}flow/get_by_flow_id`, {
+      method: "POST",
+      headers: getApiHeaders(),
+      body: JSON.stringify({ flowId }),
+    });
+    return handleResponse(response);
+  },
+
+  delFlow: async (flow_id: string) => {
+    const response = await fetch(`${config.API_URL}flow/del_flow`, {
+      method: "POST",
+      headers: getApiHeaders(),
+      body: JSON.stringify({ flow_id }),
+    });
+    return handleResponse(response);
+  },
+};
+
+const templateService = {
+  addTemplate: async (payload: { title: string; type: string; content: any }) => {
+    const body = {
+      title: payload.title,
+      type: mapBlockTypeToServer(payload.type),
+      content: typeof payload.content === "string" ? tryParseJSON(payload.content) ?? payload.content : payload.content,
+    };
+    const response = await fetch(`${config.API_URL}templet/add_new`, {
+      method: "POST",
+      headers: getApiHeaders(),
+      body: JSON.stringify(body),
+    });
+    return handleResponse(response);
+  },
+
+  getMyTemplates: async () => {
+    const response = await fetch(`${config.API_URL}templet/my_templet`, {
+      method: "GET",
+      headers: getApiHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  delTemplate: async (id: number) => {
+    const response = await fetch(`${config.API_URL}templet/del_templet`, {
+      method: "POST",
+      headers: getApiHeaders(),
+      body: JSON.stringify({ id }),
+    });
+    return handleResponse(response);
+  },
+};
+
+const fileService = {
+  uploadFile: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const token = localStorage.getItem("token");
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${config.API_URL}user/return_url`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    return handleResponse(response);
+  },
+};
+
+const tryParseJSON = (s: string) => {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
+  }
+};
+
+// ---------------------------
+// Tipos / constantes del componente
+// ---------------------------
+type BlockType = "Texto" | "Imagen" | "Documento" | "Audio" | "Video" | "Ubicación" | "Encuesta";
+
+type Block = {
+  id: string;
+  type: BlockType;
+  x: number;
+  y: number;
+  data?: any;
 };
 
 type Connection = {
-  from: string; // id bloque origen
-  fromPort: string; // id puerto dentro del bloque origen (ej. "opt-0" o "kw-1")
-  to: string; // id bloque destino (entrada única)
+  from: string;
+  fromPort: string;
+  to: string;
 };
 
 const BLOCK_BASE_X = 220;
 const BLOCK_BASE_Y = 100;
 const BLOCK_SPACING_Y = 160;
 const BLOCK_WIDTH = 260;
+const UNTITLED_FLOW_ID_PREFIX = "local_";
 
+const CANVAS_WIDTH = 1600;
+const CANVAS_HEIGHT = 1200;
+const MINIMAP_WIDTH = 200;
+const MINIMAP_HEIGHT = 150;
+
+// ---------------------------
+// FlowBuilder
+// ---------------------------
 const FlowBuilder: React.FC = () => {
-  const theme = useTheme();
-
-  // --- Estados principales ---
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [title, setTitle] = useState("Untitled");
-  const [blocks, setBlocks] = useState<Block[]>([]);
-  const nextId = useRef(1);
-
-  const [flows, setFlows] = useState<{ id: number; name: string }[]>([
-    { id: 1, name: "Flujo de bienvenida" },
-    { id: 2, name: "Flujo de soporte" },
-    { id: 3, name: "Flujo de ventas" },
-  ]);
-  const [templates, setTemplates] = useState<Template[]>([]);
-
-  const [zoom, setZoom] = useState(100);
-  const [interactive, setInteractive] = useState(true);
-  const zoomIn = () => setZoom((z) => Math.min(300, z + 10));
-  const zoomOut = () => setZoom((z) => Math.max(10, z - 10));
-  const fitView = () => setZoom(100);
-
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [flowsDrawer, setFlowsDrawer] = useState(false);
-  const toggleFlowsDrawer = () => setFlowsDrawer((p) => !p);
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogOption, setDialogOption] = useState<BlockType | null>(null);
-  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
-
-  // Form state
-  const [textContent, setTextContent] = useState("");
-  const [forAll, setForAll] = useState(false);
-
-  const [keywords, setKeywords] = useState<string[]>([]);
-  const [claveInput, setClaveInput] = useState("");
-
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-  const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const videoInputRef = useRef<HTMLInputElement | null>(null);
-  const audioInputRef = useRef<HTMLInputElement | null>(null);
-  const docInputRef = useRef<HTMLInputElement | null>(null);
-
-  const [legend, setLegend] = useState<string>("");
-
-  const [lat, setLat] = useState<string>("");
-  const [lng, setLng] = useState<string>("");
-
-  const [surveyQuestion, setSurveyQuestion] = useState("");
-  const [surveyOptions, setSurveyOptions] = useState<string[]>(["", ""]);
-
-  const optionDefs: { label: BlockType; icon: React.ReactNode }[] = useMemo(
-    () => [
-      { label: "Texto", icon: <TextFieldsIcon /> },
-      { label: "Imagen", icon: <ImageIcon /> },
-      { label: "Documento", icon: <DescriptionOutlinedIcon /> },
-      { label: "Audio", icon: <AudiotrackIcon /> },
-      { label: "Video", icon: <VideocamIcon /> },
-      { label: "Ubicación", icon: <LocationOnIcon /> },
-      { label: "Encuesta", icon: <PollIcon /> },
-    ],
-    []
-  );
-
-  const blockColors: Record<BlockType, string> = {
-    Texto: "#4C8BF5",
-    Imagen: "#E57373",
-    Documento: "#8E24AA",
-    Audio: "#FFB300",
-    Video: "#26A69A",
-    Ubicación: "#43A047",
-    Encuesta: "#7E57C2",
-  };
-
-  const getIconForType = (t: BlockType) => {
-    switch (t) {
-      case "Texto":
-        return <TextFieldsIcon fontSize="small" />;
-      case "Imagen":
-        return <ImageIcon fontSize="small" />;
-      case "Documento":
-        return <DescriptionOutlinedIcon fontSize="small" />;
-      case "Audio":
-        return <AudiotrackIcon fontSize="small" />;
-      case "Video":
-        return <VideocamIcon fontSize="small" />;
-      case "Ubicación":
-        return <LocationOnIcon fontSize="small" />;
-      case "Encuesta":
-        return <PollIcon fontSize="small" />;
-      default:
-        return <DescriptionIcon fontSize="small" />;
-    }
-  };
-
-  // --- Conexiones y refs por puerto ---
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [pendingConnection, setPendingConnection] = useState<{ from: string; fromPort: string } | null>(null);
-
-  const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const stageRef = useRef<HTMLDivElement | null>(null);
-
-  // puerto de entrada (izquierda) por bloque
-  const inputPortRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  // puertos de salida (por opción/keyword) por bloque
-  const optionPortRefs = useRef<Record<string, Record<string, HTMLDivElement | null>>>({});
-
-  type Rect = { left: number; top: number; width: number; height: number };
-  const [nodeRects, setNodeRects] = useState<Record<string, Rect>>({});
-  const [inputPortRects, setInputPortRects] = useState<Record<string, Rect>>({});
-  const [optionPortRects, setOptionPortRects] = useState<Record<string, Record<string, Rect>>>({});
-
-  // --- computeRects: se reutiliza desde useLayoutEffect y ref callbacks ---
-  const computeRects = () => {
-    const stageRect = stageRef.current?.getBoundingClientRect();
-    if (!stageRect) return;
-
-    const nmap: Record<string, Rect> = {};
-    const inMap: Record<string, Rect> = {};
-    const optMap: Record<string, Record<string, Rect>> = {};
-
-    for (const b of blocks) {
-      const el = nodeRefs.current[b.id];
-      if (el) {
-        const r = el.getBoundingClientRect();
-        nmap[b.id] = { left: r.left - stageRect.left, top: r.top - stageRect.top, width: r.width, height: r.height };
-      }
-
-      const inEl = inputPortRefs.current[b.id];
-      if (inEl) {
-        const r = inEl.getBoundingClientRect();
-        inMap[b.id] = { left: r.left - stageRect.left, top: r.top - stageRect.top, width: r.width, height: r.height };
-      }
-
-      const optRefs = optionPortRefs.current[b.id] || {};
-      const keys = Object.keys(optRefs);
-      if (keys.length) {
-        optMap[b.id] = {};
-        for (const k of keys) {
-          const oEl = optRefs[k];
-          if (!oEl) continue;
-          const r = oEl.getBoundingClientRect();
-          optMap[b.id][k] = { left: r.left - stageRect.left, top: r.top - stageRect.top, width: r.width, height: r.height };
-        }
-      }
-    }
-
-    setNodeRects(nmap);
-    setInputPortRects(inMap);
-    setOptionPortRects(optMap);
-  };
-
-  // recalcula cuando cambian blocks o zoom (o resize)
-  useLayoutEffect(() => {
-    computeRects();
-    const onResize = () => computeRects();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks, zoom]);
-
-  // --- HELPERS / ACTIONS ---
-  const handleNewFlow = () => {
-    setShowTemplates(false);
-    setTitle("Untitled");
-    setBlocks([]);
-    setSelectedFileName(null);
-    setKeywords([]);
-    setDialogOpen(false);
-    setConnections([]);
-    setPendingConnection(null);
-  };
-
-  const handleShowTemplates = () => setShowTemplates(true);
-
-  const openDialogFor = (opt: BlockType) => {
-    setEditingBlockId(null);
-    setDialogOption(opt);
-    setDialogOpen(true);
-
-    // reset
-    setTextContent("");
-    setForAll(false);
-    setKeywords([]);
-    setClaveInput("");
-    setSelectedFileName(null);
-    setLat("");
-    setLng("");
-    setSurveyQuestion("");
-    setSurveyOptions(["", ""]);
-    setLegend("");
-  };
-
-  const openEditDialog = (block: Block) => {
-    setEditingBlockId(block.id);
-    setDialogOption(block.type);
-    setDialogOpen(true);
-
-    setTextContent(block.data?.text ?? "");
-    setForAll(block.data?.forAll ?? false);
-    setKeywords(Array.isArray(block.data?.keywords) ? [...block.data.keywords] : []);
-    setClaveInput("");
-    setSelectedFileName(block.data?.fileName ?? null);
-    setLat(block.data?.lat ?? "");
-    setLng(block.data?.lng ?? "");
-    setLegend(block.data?.legend ?? "");
-    setSurveyQuestion(block.data?.question ?? "");
-    setSurveyOptions(Array.isArray(block.data?.options) && block.data.options.length > 0 ? [...block.data.options] : ["", ""]);
-  };
-
-  const closeDialog = () => {
-    setDialogOpen(false);
-    setDialogOption(null);
-    setEditingBlockId(null);
-  };
-
-  const addKeyword = () => {
-    const k = claveInput.trim();
-    if (!k) return;
-    if (!keywords.includes(k)) setKeywords((p) => [...p, k]);
-    setClaveInput("");
-  };
-
-  const removeKeyword = (kw: string) => setKeywords((p) => p.filter((x) => x !== kw));
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files && e.target.files[0];
-    if (f) setSelectedFileName(f.name);
-  };
-
-  const triggerImagePicker = () => imageInputRef.current?.click();
-  const triggerVideoPicker = () => videoInputRef.current?.click();
-  const triggerAudioPicker = () => audioInputRef.current?.click();
-  const triggerDocPicker = () => docInputRef.current?.click();
-
-  const handleSurveyOptionChange = (index: number, value: string) => {
-    setSurveyOptions((prev) => {
-      const copy = [...prev];
-      copy[index] = value;
-      return copy;
-    });
-  };
-  const addSurveyOption = () => setSurveyOptions((prev) => [...prev, ""]);
-
-  const saveBlockAsTemplate = (block: Block) => {
-    const id = `${Date.now()}`;
-    const tpl: Template = {
-      id,
-      title: `${block.type} - plantila`,
-      type: "Block",
-      blocks: [block],
-    };
-    setTemplates((p) => [tpl, ...p]);
-  };
-
-  // Eliminar bloque + limpiar refs/rects
-  const deleteBlock = (id: string) => {
-    // limpiar refs
-    delete inputPortRefs.current[id];
-    delete optionPortRefs.current[id];
-    delete nodeRefs.current[id];
-
-    // limpiar rect states
-    setInputPortRects((prev) => {
-      const copy = { ...prev };
-      delete copy[id];
-      return copy;
-    });
-    setOptionPortRects((prev) => {
-      const copy = { ...prev };
-      delete copy[id];
-      return copy;
-    });
-    setNodeRects((prev) => {
-      const copy = { ...prev };
-      delete copy[id];
-      return copy;
-    });
-
-    // eliminar conexiones relacionadas
-    setConnections((conns) => conns.filter((c) => c.from !== id && c.to !== id));
-
-    // eliminar el bloque y reordenar verticalmente
-    setBlocks((prev) => {
-      const filtered = prev.filter((b) => b.id !== id);
-      const re = filtered.map((b, idx) => ({ ...b, x: BLOCK_BASE_X, y: BLOCK_BASE_Y + idx * BLOCK_SPACING_Y }));
-      // recompute un tick después
-      setTimeout(() => computeRects(), 20);
-      return re;
-    });
-  };
-
-  const addBlockFromDialog = () => {
-    if (!dialogOption) return;
-
-    const id = editingBlockId ?? `${Date.now()}_${nextId.current++}`;
-
-    const data: any =
-      dialogOption === "Texto"
-        ? { text: textContent, forAll, keywords }
-        : ["Imagen", "Video", "Audio", "Documento"].includes(dialogOption)
-        ? { fileName: selectedFileName, legend, keywords }
-        : dialogOption === "Ubicación"
-        ? { lat: lat || null, lng: lng || null, keywords }
-        : dialogOption === "Encuesta"
-        ? { question: surveyQuestion, options: surveyOptions.filter(Boolean), keywords }
-        : null;
-
-    if (editingBlockId) {
-      setBlocks((prev) => prev.map((b) => (b.id === editingBlockId ? { ...b, type: dialogOption, data } : b)));
-      closeDialog();
-      setTimeout(() => computeRects(), 20);
-      return;
-    }
-
-    setBlocks((prev) => {
-      const newBlock: Block = { id, type: dialogOption, x: BLOCK_BASE_X, y: BLOCK_BASE_Y + prev.length * BLOCK_SPACING_Y, data };
-      const next = [...prev, newBlock];
-      setTimeout(() => computeRects(), 20);
-      return next;
-    });
-
-    closeDialog();
-  };
-
-  const handleSaveFlowAsTemplate = () => {
-    const id = `${Date.now()}`;
-    const tpl: Template = { id, title: title || `Flujo ${id}`, type: "Flow", blocks: blocks };
-    setTemplates((p) => [tpl, ...p]);
-    setFlows((p) => [{ id: Number(id.slice(-6)), name: tpl.title }, ...p]);
-  };
-
-  const handleDeleteTemplate = (id: string) => setTemplates((p) => p.filter((t) => t.id !== id));
-
-  // --- CONEXIONES desde puerto de opción ---
-  const startConnectionFromOption = (blockId: string, portId: string) => {
-    setPendingConnection({ from: blockId, fromPort: portId });
-  };
-
-  const completeConnection = (targetId: string) => {
-    if (pendingConnection && pendingConnection.from !== targetId) {
-      setConnections((prev) => {
-        if (prev.some((c) => c.from === pendingConnection.from && c.fromPort === pendingConnection.fromPort && c.to === targetId)) return prev;
-        return [...prev, { from: pendingConnection.from, fromPort: pendingConnection.fromPort, to: targetId }];
-      });
-    }
-    setPendingConnection(null);
-  };
-
-  // registrar ref de puerto de opción -> devuelve callback
-  const registerOptionRef = (blockId: string, portId: string) => (el: HTMLDivElement | null) => {
-    if (!optionPortRefs.current[blockId]) optionPortRefs.current[blockId] = {};
-    optionPortRefs.current[blockId][portId] = el;
-    // recalcular posiciones un tick después para asegurarnos que getBoundingClientRect sea correcto
-    setTimeout(() => computeRects(), 20);
-  };
-
-  // Dibuja las conexiones con las rects de puertos
-  const renderConnections = () => {
-    const arr: React.ReactNode[] = [];
-    for (let i = 0; i < connections.length; i++) {
-      const c = connections[i];
-      const fromR = optionPortRects[c.from]?.[c.fromPort];
-      const toR = inputPortRects[c.to];
-      if (!fromR || !toR) continue;
-
-      const x1 = fromR.left + fromR.width / 2;
-      const y1 = fromR.top + fromR.height / 2;
-      const x2 = toR.left + toR.width / 2;
-      const y2 = toR.top + toR.height / 2;
-
-      const dx = Math.max(30, Math.abs(x2 - x1) / 2);
-      const path = `M ${x1} ${y1} C ${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2} ${y2}`;
-      arr.push(<path key={i} d={path} stroke="#6b7280" strokeWidth={2} fill="none" markerEnd="url(#arrow)" />);
-    }
-    return arr;
-  };
-
-  // --- RENDER ---
-  return (
-    <Box sx={{ display: "flex", flexDirection: { xs: "column", lg: "row" }, minHeight: "calc(100vh - 100px)", gap: 2, p: { xs: 1, sm: 2 } }}>
-      {/* PANEL IZQUIERDO */}
-      <Paper elevation={3} sx={{ width: { xs: "100%", lg: 280 }, p: 2, display: "flex", flexDirection: "column", gap: 2, alignItems: "center", flexShrink: 0 }}>
-        <Box component="img" src={flo} alt="Ilustración" sx={{ width: "85%", maxWidth: 190, mt: 1 }} />
-
-        <Typography variant="body1" sx={{ textAlign: "center", fontWeight: 500 }}>
-          Construya su flujo fácilmente utilizando el constructor de flujos potente
-        </Typography>
-
-        <Button variant="contained" color="primary" fullWidth sx={{ borderRadius: 1.5, py: 1.4 }} onClick={handleNewFlow}>
-          Agregar nuevo flujo
-        </Button>
-
-        <Divider sx={{ width: "100%" }} />
-
-        <Button variant="contained" color="primary" fullWidth sx={{ borderRadius: 1.5, py: 1.4 }} onClick={handleShowTemplates}>
-          Guardado como plantilla
-        </Button>
-      </Paper>
-
-      {/* Área principal */}
-      <Box sx={{ flex: 1, position: "relative", borderRadius: 2, bgcolor: theme.palette.background.paper, overflow: "hidden", minHeight: { xs: "70vh", lg: "auto" } }}>
-        {showTemplates ? (
-          <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-              <DescriptionIcon />
-              <Typography variant="h6">Lista de plantillas guardadas</Typography>
-            </Box>
-
-            <TableContainer component={Paper}>
-              <Table size="small" aria-label="Plantillas">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Título</TableCell>
-                    <TableCell>Tipo</TableCell>
-                    <TableCell align="center">Eliminar</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {templates.map((tpl) => (
-                    <TableRow key={tpl.id}>
-                      <TableCell>{tpl.id}</TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <DescriptionIcon fontSize="small" />
-                          <Typography variant="body2">{tpl.title}</Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>{tpl.type}</TableCell>
-                      <TableCell align="center">
-                        <Tooltip title="Eliminar plantilla" arrow>
-                          <IconButton color="error" onClick={() => handleDeleteTemplate(tpl.id)}>
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {templates.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4}>
-                        <Typography variant="body2" color="text.secondary">
-                          No hay plantillas guardadas.
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        ) : (
-          <>
-            {/* GRID de fondo */}
-            <Box sx={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(100,100,100,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(100,100,100,0.12) 1px, transparent 1px)", backgroundSize: "20px 20px", zIndex: 0 }} />
-
-            {/* Barra de título */}
-            <Paper
-              elevation={1}
-              sx={{
-                position: "absolute",
-                top: { xs: 8, sm: 12 },
-                left: { xs: 8, sm: 12 },
-                right: { xs: 8, sm: "auto" },
-                zIndex: 4,
-                px: { xs: 1, sm: 2 },
-                py: 1,
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: "center",
-                gap: 1,
-                maxWidth: 540,
-                borderRadius: 2,
-              }}
-            >
-              <TextField value={title} onChange={(e) => setTitle(e.target.value)} variant="standard" sx={{ minWidth: 160, flex: 1, width: "100%" }} inputProps={{ "aria-label": "Título del flujo" }} />
-              <Tooltip title="Guardar flujo como plantilla" arrow>
-                <IconButton color="primary" onClick={handleSaveFlowAsTemplate}>
-                  <SaveIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Lista de flujos" arrow>
-                <IconButton color="inherit" onClick={toggleFlowsDrawer}>
-                  <MenuIcon />
-                </IconButton>
-              </Tooltip>
-            </Paper>
-
-            {/* Stage */}
-            <Box sx={{ position: "absolute", inset: 0, zIndex: 1, p: 3, overflow: "auto" }}>
-              <Box ref={stageRef} sx={{ position: "relative", width: "1600px", height: "1200px", transform: `scale(${zoom / 100})`, transformOrigin: "0 0", pointerEvents: interactive ? "auto" : "none" }}>
-                {/* SVG para conexiones (debajo de nodos) */}
-                <svg style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none" }}>
-                  <defs>
-                    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" />
-                    </marker>
-                  </defs>
-                  {renderConnections()}
-                </svg>
-
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, position: "relative", zIndex: 2 }}>
-                  {title}
-                </Typography>
-
-                {/* Bloques */}
-                {blocks.map((b) => {
-                  const keywordsList: string[] = Array.isArray(b.data?.keywords) ? b.data.keywords : [];
-                  const surveyOpts: string[] = Array.isArray(b.data?.options) ? b.data.options : [];
-
-                  return (
-                    <Draggable
-                      key={b.id}
-                      position={{ x: b.x, y: b.y }}
-                      onStop={(_, data) => {
-                        setBlocks((prev) => prev.map((blk) => (blk.id === b.id ? { ...blk, x: data.x, y: data.y } : blk)));
-                        // recalc rects un tick después
-                        setTimeout(() => computeRects(), 20);
-                      }}
-                    >
-                      <Paper
-                        ref={(el: HTMLDivElement | null) => {
-                          nodeRefs.current[b.id] = el;
-                          setTimeout(() => computeRects(), 20);
-                        }}
-                        elevation={3}
-                        sx={{ position: "absolute", left: 0, top: 0, width: BLOCK_WIDTH, borderRadius: 2, userSelect: "none", overflow: "hidden", boxShadow: 3, zIndex: 3 }}
-                      >
-                        {/* Pastilla superior */}
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1.25, py: 0.6, bgcolor: blockColors[b.type] }}>
-                          <Stack direction="row" alignItems="center" spacing={1}>
-                            <Box sx={{ color: "white", display: "flex", alignItems: "center" }}>{getIconForType(b.type)}</Box>
-                            <Typography sx={{ color: "white", fontWeight: 700, fontSize: "0.9rem" }}>{b.type}</Typography>
-                          </Stack>
-
-                          <Stack direction="row" spacing={0.5}>
-                            <Tooltip title="Editar" arrow>
-                              <IconButton size="small" onClick={() => openEditDialog(b)} sx={{ color: "white", bgcolor: "transparent" }}>
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Guardar como plantilla" arrow>
-                              <IconButton size="small" onClick={() => saveBlockAsTemplate(b)} sx={{ color: "white", bgcolor: "transparent" }}>
-                                <SaveIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Eliminar" arrow>
-                              <IconButton size="small" onClick={() => deleteBlock(b.id)} sx={{ color: "white", bgcolor: "transparent" }}>
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </Stack>
-                        </Box>
-
-                        {/* Contenido del bloque */}
-                        <Box sx={{ px: 2, py: 1.25, bgcolor: "background.paper", position: "relative" }}>
-                          {b.data?.legend && <Typography variant="caption" sx={{ display: "block", mb: 0.5 }}>{b.data.legend}</Typography>}
-
-                          {b.type === "Texto" && (
-                            <>
-                              {b.data?.text ? (
-                                <Typography variant="body2" sx={{ mb: 1 }}>{String(b.data.text).slice(0, 120)}{String(b.data.text).length > 120 ? "..." : ""}</Typography>
-                              ) : (
-                                <Typography variant="caption" color="text.secondary">Sin texto</Typography>
-                              )}
-                            </>
-                          )}
-
-                          {["Imagen", "Video", "Audio", "Documento"].includes(b.type) && (
-                            <>
-                              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>{b.data?.fileName ?? "Archivo no seleccionado"}</Typography>
-                              {b.data?.legend && <Typography variant="body2" sx={{ mb: 1 }}>{b.data.legend}</Typography>}
-                            </>
-                          )}
-
-                          {b.type === "Ubicación" && <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>{b.data?.lat ? `lat: ${b.data.lat} lng: ${b.data.lng}` : "Sin coordenadas"}</Typography>}
-
-                          {b.type === "Encuesta" && (
-                            <>
-                              <Typography variant="body2" sx={{ mb: 1 }}>{b.data?.question ?? "Sin pregunta"}</Typography>
-                              <Stack spacing={0.5}>
-                                {surveyOpts.map((opt: string, i: number) => {
-                                  const portId = `opt-${i}`;
-                                  return (
-                                    <Box key={portId} sx={{ position: "relative" }}>
-                                      <Button variant="outlined" size="small" fullWidth sx={{ justifyContent: "flex-start", textTransform: "none" }}>{opt}</Button>
-
-                                      {/* Puerto por opción */}
-                                      <Box ref={registerOptionRef(b.id, portId)} sx={{ position: "absolute", right: -10, top: "50%", transform: "translateY(-50%)" }}>
-                                        <Tooltip title={pendingConnection?.from === b.id && pendingConnection?.fromPort === portId ? "Conexión iniciada" : "Conectar desde esta opción"} arrow>
-                                          <IconButton size="small" onClick={() => startConnectionFromOption(b.id, portId)} sx={{ color: blockColors[b.type], bgcolor: "transparent" }}>
-                                            <FiberManualRecordIcon fontSize="small" />
-                                          </IconButton>
-                                        </Tooltip>
-                                      </Box>
-                                    </Box>
-                                  );
-                                })}
-                              </Stack>
-                            </>
-                          )}
-
-                          {/* keywords: ahora como renglones (botones full width) */}
-                          {keywordsList.length > 0 && (
-                            <Stack spacing={0.5} sx={{ mt: 1 }}>
-                              {keywordsList.map((k: string, i: number) => {
-                                const portId = `kw-${i}`;
-                                return (
-                                  <Box key={portId} sx={{ position: "relative" }}>
-                                    <Button variant="outlined" size="small" fullWidth sx={{ justifyContent: "flex-start", textTransform: "none", borderRadius: 2, bgcolor: "transparent", color: "text.primary" }}>
-                                      {k}
-                                    </Button>
-
-                                    {/* Puerto por keyword */}
-                                    <Box ref={registerOptionRef(b.id, portId)} sx={{ position: "absolute", right: -10, top: "50%", transform: "translateY(-50%)" }}>
-                                      <Tooltip title={pendingConnection?.from === b.id && pendingConnection?.fromPort === portId ? "Conexión iniciada" : "Conectar desde esta clave"} arrow>
-                                        <IconButton size="small" onClick={() => startConnectionFromOption(b.id, portId)} sx={{ color: blockColors[b.type], bgcolor: "transparent" }}>
-                                          <FiberManualRecordIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    </Box>
-                                  </Box>
-                                );
-                              })}
-                            </Stack>
-                          )}
-                        </Box>
-
-                        {/* Puerto de entrada (izquierda) */}
-                        <Box
-                          ref={(el: HTMLDivElement | null) => {
-                            inputPortRefs.current[b.id] = el;
-                            setTimeout(() => computeRects(), 20);
-                          }}
-                          sx={{ position: "absolute", left: -10, top: "50%", transform: "translateY(-50%)", zIndex: 5 }}
-                        >
-                          <Tooltip title="Aceptar conexión" arrow>
-                            <IconButton size="small" onClick={() => completeConnection(b.id)} sx={{ bgcolor: pendingConnection && pendingConnection.from !== b.id ? "rgba(255,255,255,0.06)" : "transparent", color: "rgba(0,0,0,0.54)" }}>
-                              <RadioButtonUncheckedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </Paper>
-                    </Draggable>
-                  );
-                })}
-              </Box>
-            </Box>
-
-            {/* Controles inferiores izquierda */}
-            <Box sx={{ position: "absolute", bottom: 16, left: 16, display: "flex", flexDirection: "column", gap: 1, zIndex: 6 }}>
-              <Tooltip title="Zoom in" arrow>
-                <IconButton color="primary" onClick={zoomIn} sx={{ bgcolor: "background.paper" }}>
-                  <AddCircleOutlineIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Zoom out" arrow>
-                <IconButton color="primary" onClick={zoomOut} sx={{ bgcolor: "background.paper" }}>
-                  <RemoveCircleOutlineIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Fit view" arrow>
-                <IconButton color="primary" onClick={fitView} sx={{ bgcolor: "background.paper" }}>
-                  <FitScreenIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Toggle interactive" arrow>
-                <IconButton color="primary" onClick={() => setInteractive((p) => !p)} sx={{ bgcolor: "background.paper" }}>
-                  {interactive ? <LockOpenIcon /> : <LockIcon />}
-                </IconButton>
-              </Tooltip>
-            </Box>
-
-            {/* Menú flotante (+) */}
-            <Box onMouseEnter={() => setMenuOpen(true)} onMouseLeave={() => setMenuOpen(false)} sx={{ position: "absolute", top: "50%", right: { xs: 8, sm: 16 }, transform: "translateY(-50%)", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, zIndex: 7 }}>
-              {menuOpen &&
-                optionDefs.map((opt, idx) => (
-                  <Zoom in={menuOpen} key={opt.label} style={{ transitionDelay: `${idx * 50}ms` }}>
-                    <Button variant="contained" color="primary" onClick={() => openDialogFor(opt.label)} startIcon={opt.icon} sx={{ borderRadius: "20px", justifyContent: "flex-start", minWidth: "170px", textTransform: "none", fontSize: "0.9rem", boxShadow: 3 }}>
-                      {opt.label}
-                    </Button>
-                  </Zoom>
-                ))}
-
-              <Fab color="secondary" sx={{ boxShadow: 4 }} onClick={() => setMenuOpen((p) => !p)} aria-label="abrir opciones">
-                {menuOpen ? <CloseIcon /> : <AddIcon />}
-              </Fab>
-            </Box>
-          </>
-        )}
-      </Box>
-
-      {/* Drawer derecho */}
-      <Drawer anchor="right" open={flowsDrawer} onClose={toggleFlowsDrawer} sx={{ "& .MuiDrawer-paper": { width: { xs: "85vw", sm: 340 }, p: 2 } }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <ListAltIcon />
-          <Typography variant="h6">Lista de flujos</Typography>
-        </Box>
-        <Divider sx={{ mb: 1 }} />
-        <List>
-          {flows.map((flow) => (
-            <ListItem key={flow.id} secondaryAction={<Tooltip title="Editar" arrow><IconButton edge="end" color="primary"><EditIcon /></IconButton></Tooltip>}>
-              <ListItemIcon>
-                <DescriptionIcon />
-              </ListItemIcon>
-              <ListItemText primary={flow.name} />
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
-
-      {/* Dialog */}
-      <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="sm">
-        <DialogTitle>
-          {dialogOption ? (
-            <>
-              {dialogOption === "Texto" && (editingBlockId ? "Editar mensaje de texto" : "Agregar mensaje de texto")}
-              {dialogOption === "Imagen" && (editingBlockId ? "Editar mensaje de imagen" : "Agregar mensaje de imagen")}
-              {dialogOption === "Video" && (editingBlockId ? "Editar mensaje de video" : "Agregar mensaje de video")}
-              {dialogOption === "Audio" && (editingBlockId ? "Editar mensaje de audio" : "Agregar mensaje de audio")}
-              {dialogOption === "Documento" && (editingBlockId ? "Editar mensaje de documento" : "Agregar mensaje de documento")}
-              {dialogOption === "Ubicación" && (editingBlockId ? "Editar mensaje de ubicación" : "Agregar mensaje de ubicación")}
-              {dialogOption === "Encuesta" && (editingBlockId ? "Editar encuesta" : "Mensaje de la encuesta")}
-            </>
-          ) : (
-            "Agregar"
-          )}
-        </DialogTitle>
-
-        <DialogContent dividers>
-          {/* TEXTO */}
-          {dialogOption === "Texto" && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <FormControlLabel control={<Switch checked={forAll} onChange={() => setForAll((p) => !p)} />} label="¿Para todos?" />
-              <TextField multiline minRows={5} placeholder="Ingresar mensaje..." value={textContent} onChange={(e) => setTextContent(e.target.value)} fullWidth />
-            </Box>
-          )}
-
-          {/* MULTIMEDIA */}
-          {["Imagen", "Video", "Audio", "Documento"].includes(String(dialogOption)) && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <Typography variant="body2" color="text.secondary">Selecciona un archivo para {String(dialogOption).toLowerCase()}.</Typography>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "flex-start", sm: "center" }}>
-                <Button variant="outlined" sx={{ textTransform: "none", bgcolor: theme.palette.action.hover, opacity: 0.95 }} onClick={() => { if (dialogOption === "Imagen") triggerImagePicker(); if (dialogOption === "Video") triggerVideoPicker(); if (dialogOption === "Audio") triggerAudioPicker(); if (dialogOption === "Documento") triggerDocPicker(); }}>
-                  {dialogOption === "Imagen" ? "Subir imagen" : dialogOption === "Video" ? "Subir video" : dialogOption === "Audio" ? "Subir audio" : "Subir documento"}
-                </Button>
-                <Typography variant="caption" color="text.secondary">{selectedFileName ?? "Ningún archivo seleccionado"}</Typography>
-              </Stack>
-              <TextField label="Agregar leyenda (opcional)" placeholder="Leyenda..." value={legend} onChange={(e) => setLegend(e.target.value)} fullWidth multiline maxRows={3} />
-              <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
-              <input ref={videoInputRef} type="file" accept="video/*" style={{ display: "none" }} onChange={handleFileChange} />
-              <input ref={audioInputRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={handleFileChange} />
-              <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{ display: "none" }} onChange={handleFileChange} />
-            </Box>
-          )}
-
-          {/* UBICACIÓN */}
-          {dialogOption === "Ubicación" && (
-            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2, mt: 1 }}>
-              <TextField label="Latitud" value={lat} onChange={(e) => setLat(e.target.value)} fullWidth type="number" />
-              <TextField label="Longitud" value={lng} onChange={(e) => setLng(e.target.value)} fullWidth type="number" />
-            </Box>
-          )}
-
-          {/* ENCUESTA */}
-          {dialogOption === "Encuesta" && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <TextField label="Pregunta" value={surveyQuestion} onChange={(e) => setSurveyQuestion(e.target.value)} fullWidth />
-              <Box>
-                <Typography variant="caption" color="text.secondary">Opciones de la encuesta</Typography>
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  {surveyOptions.map((opt, i) => <TextField key={i} value={opt} onChange={(e) => handleSurveyOptionChange(i, e.target.value)} size="small" placeholder={`Opción ${i + 1}`} />)}
-                </Stack>
-                <Button startIcon={<AddCircleIcon />} size="small" sx={{ mt: 1 }} onClick={addSurveyOption}>Agregar opción</Button>
-              </Box>
-            </Box>
-          )}
-
-          {/* CLAVES */}
-          <Divider sx={{ mt: 2, mb: 1 }} />
-          <Typography variant="subtitle2">Claves de respuesta</Typography>
-          <Box sx={{ mt: 1, mb: 1 }}>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>{keywords.map((k) => <Chip key={k} label={k} onDelete={() => removeKeyword(k)} />)}</Stack>
-          </Box>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <TextField placeholder="Clave de respuesta" value={claveInput} onChange={(e) => setClaveInput(e.target.value)} fullWidth size="small" />
-            <Tooltip title="Agregar clave" arrow>
-              <IconButton color="primary" onClick={addKeyword} aria-label="agregar clave"><AddCircleIcon /></IconButton>
-            </Tooltip>
-          </Stack>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={closeDialog}>Cancelar</Button>
-          <Button variant="contained" onClick={addBlockFromDialog} disabled={dialogOption === "Texto" ? textContent.trim().length === 0 : ["Imagen", "Video", "Audio", "Documento"].includes(String(dialogOption)) ? !selectedFileName : dialogOption === "Ubicación" ? !(lat && lng) : dialogOption === "Encuesta" ? surveyQuestion.trim().length === 0 || surveyOptions.filter(Boolean).length < 2 : false}>
-            {editingBlockId ? "Guardar cambios" : "Agregar"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
+  const theme = useTheme();
+
+  // --- Estados principales ---
+  const [title, setTitle] = useState("Untitled");
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [currentFlowId, setCurrentFlowId] = useState<string | null>(`${UNTITLED_FLOW_ID_PREFIX}${Date.now()}`);
+
+  const [mainView, setMainView] = useState<"canvas" | "templates">("canvas");
+
+  const [flows, setFlows] = useState<{ id: number; name: string; flow_id?: string }[]>([]);
+
+  const [zoom, setZoom] = useState(100);
+  const [interactive, setInteractive] = useState(true);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [flowsDrawer, setFlowsDrawer] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogOption, setDialogOption] = useState<BlockType | null>(null);
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+
+  const [templates, setTemplates] = useState<any[]>([]);
+
+  // Form state
+  const [textContent, setTextContent] = useState("");
+  const [forAll, setForAll] = useState(false);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [claveInput, setClaveInput] = useState("");
+  const [legend, setLegend] = useState<string>("");
+  const [lat, setLat] = useState<string>("");
+  const [lng, setLng] = useState<string>("");
+  const [surveyQuestion, setSurveyQuestion] = useState("");
+  const [surveyOptions, setSurveyOptions] = useState<string[]>(["", ""]);
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
+  const [uploadedFileOriginalName, setUploadedFileOriginalName] = useState<string | null>(null);
+
+  // Refs
+  const nextId = useRef(1);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const inputPortRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const optionPortRefs = useRef<Record<string, Record<string, HTMLDivElement | null>>>({});
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [viewportRect, setViewportRect] = useState({ top: 0, left: 0, width: 0, height: 0 });
+
+  const [pendingConnection, setPendingConnection] = useState<{ from: string; fromPort: string } | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+
+  type Rect = { left: number; top: number; width: number; height: number };
+  const [nodeRects, setNodeRects] = useState<Record<string, Rect>>({});
+  const [inputPortRects, setInputPortRects] = useState<Record<string, Rect>>({});
+  const [optionPortRects, setOptionPortRects] = useState<Record<string, Record<string, Rect>>>({});
+
+  useEffect(() => {
+    if (dialogOption === "Texto") {
+      if (forAll) {
+        setTextContent("{{OTHER_MSG}}");
+        setKeywords([]);
+      } else {
+        setTextContent("");
+      }
+    }
+  }, [forAll, dialogOption]);
+
+  // --- MODIFICACIÓN: Lógica de validación actualizada ---
+  const isFormValid = useMemo(() => {
+    if (!dialogOption) return false;
+
+    switch (dialogOption) {
+      case "Texto":
+        if (!textContent.trim()) return false;
+        if (!forAll && keywords.length === 0) return false;
+        return true;
+
+      case "Imagen":
+      case "Video":
+      case "Documento":
+        // Ahora requiere archivo, leyenda y palabras clave
+        return !!uploadedFileUrl && legend.trim() !== "" && keywords.length > 0;
+
+      case "Audio":
+        // Audio no tiene leyenda, así que requiere archivo y palabras clave
+        return !!uploadedFileUrl && keywords.length > 0;
+
+      case "Ubicación":
+        return !!(lat.trim() && lng.trim());
+
+      case "Encuesta":
+        const validOptions = surveyOptions.filter((opt) => opt.trim() !== "").length;
+        return !!(surveyQuestion.trim() && validOptions >= 2);
+
+      default:
+        return false;
+    }
+  }, [dialogOption, textContent, keywords, forAll, uploadedFileUrl, legend, lat, lng, surveyQuestion, surveyOptions]);
+
+  const optionDefs: { label: BlockType; icon: React.ReactNode }[] = useMemo(
+    () => [
+      { label: "Texto", icon: <TextFieldsIcon /> },
+      { label: "Imagen", icon: <ImageIcon /> },
+      { label: "Documento", icon: <DescriptionOutlinedIcon /> },
+      { label: "Audio", icon: <AudiotrackIcon /> },
+      { label: "Video", icon: <VideocamIcon /> },
+      { label: "Ubicación", icon: <LocationOnIcon /> },
+      { label: "Encuesta", icon: <PollIcon /> },
+    ],
+    []
+  );
+
+  const blockColors: Record<BlockType, string> = {
+    Texto: "#4C8BF5",
+    Imagen: "#E57373",
+    Documento: "#8E24AA",
+    Audio: "#FFB300",
+    Video: "#26A69A",
+    Ubicación: "#43A047",
+    Encuesta: "#7E57C2",
+  };
+
+  const getIconForType = (t: BlockType) => {
+    const icons: Record<string, React.ReactNode> = {
+      Texto: <TextFieldsIcon fontSize="small" />,
+      Imagen: <ImageIcon fontSize="small" />,
+      Documento: <DescriptionOutlinedIcon fontSize="small" />,
+      Audio: <AudiotrackIcon fontSize="small" />,
+      Video: <VideocamIcon fontSize="small" />,
+      Ubicación: <LocationOnIcon fontSize="small" />,
+      Encuesta: <PollIcon fontSize="small" />,
+    };
+    return icons[t] || <DescriptionIcon fontSize="small" />;
+  };
+
+  const normalizeType = (nodeType: string | undefined): BlockType => {
+    if (!nodeType) return "Texto";
+    const s = String(nodeType).toLowerCase();
+    if (s.includes("text")) return "Texto";
+    if (s.includes("image")) return "Imagen";
+    if (s.includes("document")) return "Documento";
+    if (s.includes("audio")) return "Audio";
+    if (s.includes("video")) return "Video";
+    if (s.includes("location")) return "Ubicación";
+    if (s.includes("poll")) return "Encuesta";
+    return "Texto";
+  };
+
+  const computeRects = () => {
+    const stageRect = stageRef.current?.getBoundingClientRect();
+    if (!stageRect) return;
+
+    const factor = zoom / 100;
+
+    const nmap: Record<string, Rect> = {};
+    const inMap: Record<string, Rect> = {};
+    const optMap: Record<string, Record<string, Rect>> = {};
+
+    for (const b of blocks) {
+      const el = document.getElementById(`node-${b.id}`);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        nmap[b.id] = {
+          left: (r.left - stageRect.left) / factor,
+          top: (r.top - stageRect.top) / factor,
+          width: r.width / factor,
+          height: r.height / factor,
+        };
+      }
+
+      const inEl = inputPortRefs.current[b.id];
+      if (inEl) {
+        const r = inEl.getBoundingClientRect();
+        inMap[b.id] = {
+          left: (r.left - stageRect.left) / factor,
+          top: (r.top - stageRect.top) / factor,
+          width: r.width / factor,
+          height: r.height / factor,
+        };
+      }
+
+      const optRefs = optionPortRefs.current[b.id] || {};
+      for (const k of Object.keys(optRefs)) {
+        const oEl = optRefs[k];
+        if (oEl) {
+          if (!optMap[b.id]) optMap[b.id] = {};
+          const r = oEl.getBoundingClientRect();
+          optMap[b.id][k] = {
+            left: (r.left - stageRect.left) / factor,
+            top: (r.top - stageRect.top) / factor,
+            width: r.width / factor,
+            height: r.height / factor,
+          };
+        }
+      }
+    }
+    setNodeRects(nmap);
+    setInputPortRects(inMap);
+    setOptionPortRects(optMap);
+  };
+
+  useLayoutEffect(() => {
+    computeRects();
+    const t = window.setTimeout(() => computeRects(), 60);
+    return () => clearTimeout(t);
+  }, [blocks, zoom, mainView]);
+
+  useEffect(() => {
+    const handleResize = () => computeRects();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const vp = viewportRef.current;
+
+    const updateViewport = () => {
+      if (!vp) return;
+      const { scrollTop, scrollLeft, clientWidth, clientHeight } = vp;
+      const factor = zoom / 100;
+      setViewportRect({
+        top: scrollTop / factor,
+        left: scrollLeft / factor,
+        width: clientWidth / factor,
+        height: clientHeight / factor,
+      });
+    };
+
+    updateViewport();
+
+    window.addEventListener("resize", updateViewport);
+    vp?.addEventListener("scroll", updateViewport);
+
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      vp?.removeEventListener("scroll", updateViewport);
+    };
+  }, [zoom]);
+
+  const loadFlows = async () => {
+    try {
+      const data = await apiService.getMyFlows();
+      const mapped = Array.isArray(data.data) ? data.data.map((f: any) => ({ id: f.id, name: f.title, flow_id: f.flow_id })) : [];
+      setFlows(mapped);
+    } catch (err: any) {
+      console.error("Error cargando flujos:", err);
+      window.alert(err.message || "No se pudo cargar la lista de flujos");
+    }
+  };
+
+  const loadTemplates = async () => {
+    try {
+      const data = await templateService.getMyTemplates();
+      const mapped = Array.isArray(data.data) ? data.data : [];
+      setTemplates(mapped);
+    } catch (err: any) {
+      console.error("Error cargando plantillas:", err);
+      window.alert(err.message || "No se pudieron cargar las plantillas");
+    }
+  };
+
+  const handleLoadFlow = async (flowId: string, flowTitle: string) => {
+    try {
+      const data = await apiService.getFlowById(flowId);
+      const nodes = Array.isArray(data.nodes) ? data.nodes : [];
+      const edges = Array.isArray(data.edges) ? data.edges : [];
+
+      const mappedBlocks: Block[] = nodes.map((n: any) => ({
+        id: String(n.id),
+        type: normalizeType(n.nodeType),
+        x: n.position?.x ?? BLOCK_BASE_X,
+        y: n.position?.y ?? BLOCK_BASE_Y,
+        data: {
+          ...n.data?.state,
+          keywords: n.data?.state?.options || [],
+          forAll: (n.data?.state?.options || []).includes("{{OTHER_MSG}}"),
+        },
+      }));
+
+      const mappedConns: Connection[] = edges
+        .map((e: any) => (e.source && e.target ? ({ from: String(e.source), to: String(e.target), fromPort: e.sourceHandle || "opt-0" } as Connection) : null))
+        .filter(Boolean) as Connection[];
+
+      setBlocks(mappedBlocks);
+      setConnections(mappedConns);
+      setTitle(flowTitle);
+      setCurrentFlowId(flowId);
+      setFlowsDrawer(false);
+      setMainView("canvas");
+    } catch (err: any) {
+      console.error("Error cargando flujo:", err);
+      window.alert(err.message || "No se pudo cargar el flujo");
+    }
+  };
+
+  const randomString = (length: number) => {
+    let result = "";
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+  };
+
+  const handleSaveFlowToServer = async () => {
+    try {
+      if (!title.trim()) return window.alert("Por favor, dale un título al flujo.");
+
+      const mappedNodes = blocks.map((b) => {
+        const stateData = { ...b.data };
+        if (stateData.keywords) {
+          stateData.options = stateData.keywords;
+          delete stateData.keywords;
+        }
+
+        return {
+          id: b.id,
+          type: "CustomNode",
+          nodeType: mapBlockTypeToServer(b.type),
+          position: { x: b.x, y: b.y },
+          data: { state: stateData },
+        };
+      });
+
+      const mappedEdges = connections.map((c) => ({ source: c.from, target: c.to, sourceHandle: c.fromPort }));
+
+      const flowId = currentFlowId && !currentFlowId.startsWith(UNTITLED_FLOW_ID_PREFIX) ? currentFlowId : `${randomString(32)}`;
+
+      const payload = {
+        title: title,
+        nodes: mappedNodes,
+        edges: mappedEdges,
+        flowId,
+      };
+
+      await apiService.addFlow(payload);
+
+      window.alert("Flujo guardado en servidor correctamente");
+      setCurrentFlowId(flowId);
+      await loadFlows();
+    } catch (err: any) {
+      console.error("Error guardando flujo:", err);
+      window.alert(err.message || "No se pudo guardar el flujo");
+    }
+  };
+
+  const handleDeleteFlow = async (flowId: string | undefined) => {
+    if (!flowId) return;
+    if (!window.confirm("¿Estás seguro de que quieres eliminar este flujo?")) return;
+    try {
+      await apiService.delFlow(flowId);
+      window.alert("Flujo eliminado correctamente");
+      await loadFlows();
+      if (currentFlowId === flowId) handleNewFlow();
+    } catch (err: any) {
+      console.error("Error al eliminar flujo:", err);
+      window.alert(err.message || "No se pudo eliminar el flujo");
+    }
+  };
+
+  const handleDeleteTemplate = async (id: number) => {
+    if (!window.confirm("¿Está seguro de eliminar esta plantilla?")) return;
+    try {
+      await templateService.delTemplate(id);
+      window.alert("Plantilla eliminada.");
+      await loadTemplates();
+    } catch (err: any) {
+      console.error("Error eliminando plantilla:", err);
+      window.alert(err.message || "No se pudo eliminar la plantilla");
+    }
+  };
+
+  const handleNewFlow = () => {
+    setTitle("Untitled");
+    setBlocks([]);
+    setConnections([]);
+    setCurrentFlowId(`${UNTITLED_FLOW_ID_PREFIX}${Date.now()}`);
+    setDialogOpen(false);
+    setPendingConnection(null);
+    setMainView("canvas");
+  };
+
+  const openDialogFor = (opt: BlockType) => {
+    setEditingBlockId(null);
+    setDialogOption(opt);
+    setDialogOpen(true);
+    // Reset all form fields
+    setTextContent("");
+    setForAll(false);
+    setKeywords([]);
+    setClaveInput("");
+    setLat("");
+    setLng("");
+    setSurveyQuestion("");
+    setSurveyOptions(["", ""]);
+    setLegend("");
+    setUploadedFileUrl(null);
+    setUploadedFileOriginalName(null);
+  };
+
+  const openEditDialog = (block: Block) => {
+    setEditingBlockId(block.id);
+    setDialogOption(block.type);
+    setDialogOpen(true);
+    // Populate form fields from block data
+    setTextContent(block.data?.text ?? "");
+    setForAll(block.data?.forAll ?? false);
+    setKeywords(block.data?.keywords ?? []);
+    setLegend(block.data?.legend ?? "");
+    setLat(block.data?.lat ?? "");
+    setLng(block.data?.lng ?? "");
+    setSurveyQuestion(block.data?.question ?? "");
+    setSurveyOptions(Array.isArray(block.data?.options) && block.data.options.length > 0 ? [...block.data.options] : ["", ""]);
+    setUploadedFileUrl(block.data?.url ?? null);
+    setUploadedFileOriginalName(block.data?.originalName ?? null);
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setDialogOption(null);
+    setEditingBlockId(null);
+  };
+
+  const addKeyword = () => {
+    const k = claveInput.trim();
+    if (k && !keywords.includes(k)) setKeywords((p) => [...p, k]);
+    setClaveInput("");
+  };
+
+  const removeKeyword = (kw: string) => setKeywords((p) => p.filter((x) => x !== kw));
+
+  const deleteBlock = (id: string) => {
+    setConnections((conns) => conns.filter((c) => c.from !== id && c.to !== id));
+    setBlocks((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadedFileUrl(null);
+    setUploadedFileOriginalName(null);
+
+    try {
+      const data = await fileService.uploadFile(file);
+      if (data.success) {
+        setUploadedFileUrl(data.url);
+        setUploadedFileOriginalName(data.originalName);
+      } else {
+        throw new Error(data.msg || "Error al subir el archivo.");
+      }
+    } catch (err: any) {
+      console.error("Error en la subida:", err);
+      window.alert(err.message || "No se pudo subir el archivo.");
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleSurveyOptionChange = (index: number, value: string) => {
+    const newOptions = [...surveyOptions];
+    newOptions[index] = value;
+    setSurveyOptions(newOptions);
+  };
+
+  const addSurveyOption = () => {
+    setSurveyOptions([...surveyOptions, ""]);
+  };
+
+  const removeSurveyOption = (index: number) => {
+    if (surveyOptions.length > 1) {
+      setSurveyOptions(surveyOptions.filter((_, i) => i !== index));
+    }
+  };
+
+  const addBlockFromDialog = () => {
+    if (!dialogOption) return;
+    const id = editingBlockId ?? `${Date.now()}_${nextId.current++}`;
+
+    let finalKeywords = [...keywords];
+    if (dialogOption === "Texto" && forAll) {
+      finalKeywords = ["{{OTHER_MSG}}"];
+    } else if (dialogOption === "Texto" && !forAll) {
+      finalKeywords = finalKeywords.filter((k) => k !== "{{OTHER_MSG}}");
+    }
+
+    const data: any = { keywords: finalKeywords };
+
+    switch (dialogOption) {
+      case "Texto":
+        data.text = textContent;
+        data.forAll = forAll;
+        break;
+      case "Imagen":
+      case "Video":
+      case "Documento":
+        data.url = uploadedFileUrl;
+        data.originalName = uploadedFileOriginalName;
+        data.legend = legend;
+        break;
+      case "Audio":
+        data.url = uploadedFileUrl;
+        data.originalName = uploadedFileOriginalName;
+        break;
+      case "Ubicación":
+        data.lat = lat;
+        data.lng = lng;
+        break;
+      case "Encuesta":
+        data.question = surveyQuestion;
+        const nonEmptyOptions = surveyOptions.filter((opt) => opt.trim() !== "");
+        data.options = nonEmptyOptions;
+        data.keywords = nonEmptyOptions;
+        break;
+    }
+
+    if (editingBlockId) {
+      setBlocks((prev) => prev.map((b) => (b.id === editingBlockId ? { ...b, type: dialogOption, data } : b)));
+    } else {
+      setBlocks((prev) => [...prev, { id, type: dialogOption, x: BLOCK_BASE_X, y: BLOCK_BASE_Y + prev.length * BLOCK_SPACING_Y, data }]);
+    }
+
+    closeDialog();
+    setTimeout(() => computeRects(), 40);
+  };
+
+  const startConnectionFromOption = (blockId: string, portId: string) => {
+    setPendingConnection({ from: blockId, fromPort: portId });
+  };
+
+  const completeConnection = (targetId: string) => {
+    if (pendingConnection && pendingConnection.from !== targetId) {
+      const exists = connections.some((c) => c.from === pendingConnection.from && c.fromPort === pendingConnection.fromPort && c.to === targetId);
+      if (!exists) setConnections((prev) => [...prev, { from: pendingConnection.from, fromPort: pendingConnection.fromPort, to: targetId }]);
+    }
+    setPendingConnection(null);
+  };
+
+  const registerOptionRef = (blockId: string, portId: string) => (el: HTMLDivElement | null) => {
+    if (!optionPortRefs.current[blockId]) optionPortRefs.current[blockId] = {};
+    optionPortRefs.current[blockId][portId] = el;
+  };
+
+  const registerInputRef = (blockId: string) => (el: HTMLDivElement | null) => {
+    inputPortRefs.current[blockId] = el;
+  };
+
+  const renderConnections = () => {
+    return connections.map((c, i) => {
+      const fromR = optionPortRects[c.from]?.[c.fromPort];
+      const toR = inputPortRects[c.to];
+      if (!fromR || !toR) return null;
+
+      const x1 = fromR.left + fromR.width / 2;
+      const y1 = fromR.top + fromR.height / 2;
+      const x2 = toR.left + toR.width / 2;
+      const y2 = toR.top + toR.height / 2;
+      const dx = Math.max(30, Math.abs(x2 - x1) / 2);
+      const path = `M ${x1} ${y1} C ${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2} ${y2}`;
+
+      return <path key={i} d={path} stroke="#6b7280" strokeWidth={2} fill="none" markerEnd="url(#arrow)" />;
+    });
+  };
+
+  const saveBlockAsTemplate = async (block: Block) => {
+    try {
+      const templateTitle = window.prompt("Introduce un título para la plantilla:", `${block.type} - Bloque`);
+      if (!templateTitle || !templateTitle.trim()) return;
+
+      const payload = { title: templateTitle, type: block.type, content: block.data || {} };
+      await templateService.addTemplate(payload);
+      await loadTemplates();
+
+      window.alert("Plantilla guardada correctamente");
+    } catch (err: any) {
+      console.error(err);
+      window.alert(err.message || "No se pudo guardar la plantilla");
+    }
+  };
+
+  const insertTemplateIntoCanvas = (tpl: any) => {
+    try {
+      const rawContent = typeof tpl.content === "string" ? tryParseJSON(tpl.content) ?? tpl.content : tpl.content;
+
+      const newBlock: Block = {
+        id: `${Date.now()}_${nextId.current++}`,
+        type: normalizeType(tpl.type),
+        x: BLOCK_BASE_X,
+        y: BLOCK_BASE_Y + blocks.length * 60,
+        data: rawContent,
+      };
+      setBlocks((prev) => [...prev, newBlock]);
+      setMainView("canvas");
+      setTimeout(() => computeRects(), 40);
+    } catch (err: any) {
+      console.error(err);
+      window.alert("No se pudo insertar la plantilla");
+    }
+  };
+
+  useEffect(() => {
+    loadFlows();
+    loadTemplates();
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const stageRect = stageRef.current?.getBoundingClientRect();
+      if (!stageRect) return;
+      const factor = zoom / 100;
+      setMousePos({ x: (e.clientX - stageRect.left) / factor, y: (e.clientY - stageRect.top) / factor });
+    };
+    if (pendingConnection) window.addEventListener("mousemove", onMove);
+    else setMousePos(null);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, [pendingConnection, zoom]);
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: { xs: "column", lg: "row" }, minHeight: "calc(100vh - 100px)", gap: 2, p: { xs: 1, sm: 2 } }}>
+      <Paper elevation={3} sx={{ width: { xs: "100%", lg: 280 }, p: 2, display: "flex", flexDirection: "column", gap: 2, alignItems: "center", flexShrink: 0 }}>
+        <Box component="img" src={flo} alt="Ilustración" sx={{ width: "85%", maxWidth: 190, mt: 1 }} />
+        <Typography variant="body1" sx={{ textAlign: "center", fontWeight: 500 }}>
+          Construya su flujo fácilmente utilizando el constructor de flujos potente
+        </Typography>
+        <Button variant="contained" color="primary" fullWidth sx={{ borderRadius: 1.5, py: 1.4 }} onClick={handleNewFlow}>
+          Agregar nuevo flujo
+        </Button>
+        <Button variant="outlined" color="primary" fullWidth sx={{ borderRadius: 1.5, py: 1.2 }} onClick={() => setMainView("templates")}>
+          Guardado como plantilla
+        </Button>
+      </Paper>
+
+      <Box sx={{ flex: 1, position: "relative", borderRadius: 2, bgcolor: theme.palette.background.paper, overflow: "hidden", minHeight: { xs: "70vh", lg: "auto" } }}>
+        {mainView === "canvas" ? (
+          <>
+            <Box sx={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(100,100,100,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(100,100,100,0.12) 1px, transparent 1px)", backgroundSize: "20px 20px", zIndex: 0 }} />
+            <Paper elevation={1} sx={{ position: "absolute", top: { xs: 8, sm: 12 }, left: { xs: 8, sm: 12 }, zIndex: 4, px: { xs: 1, sm: 2 }, py: 1, display: "flex", alignItems: "center", gap: 1, borderRadius: 2 }}>
+              <TextField value={title} onChange={(e) => setTitle(e.target.value)} variant="standard" sx={{ minWidth: 160 }} inputProps={{ "aria-label": "Título del flujo" }} />
+              <Tooltip title="Guardar flujo en servidor" arrow>
+                <IconButton color="primary" onClick={handleSaveFlowToServer}>
+                  <SaveIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Lista de flujos" arrow>
+                <IconButton color="inherit" onClick={() => setFlowsDrawer(true)}>
+                  <MenuIcon />
+                </IconButton>
+              </Tooltip>
+            </Paper>
+
+            <Box ref={viewportRef} sx={{ position: "absolute", inset: 0, zIndex: 1, overflow: "auto" }}>
+              <Box ref={stageRef} sx={{ position: "relative", width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px`, transform: `scale(${zoom / 100})`, transformOrigin: "0 0", pointerEvents: interactive ? "auto" : "none" }}>
+                <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1, pointerEvents: "none" }}>
+                  <defs>
+                    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280" />
+                    </marker>
+                  </defs>
+                  {renderConnections()}
+                  {pendingConnection &&
+                    (() => {
+                      const fromR = optionPortRects[pendingConnection.from]?.[pendingConnection.fromPort];
+                      if (!fromR || !mousePos) return null;
+                      const x1 = fromR.left + fromR.width / 2;
+                      const y1 = fromR.top + fromR.height / 2;
+                      const x2 = mousePos.x;
+                      const y2 = mousePos.y;
+                      const dx = Math.max(30, Math.abs(x2 - x1) / 2);
+                      const d = `M ${x1} ${y1} C ${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2} ${y2}`;
+                      return <path d={d} stroke="#ff6f00" strokeWidth={2} fill="none" strokeDasharray="6 4" />;
+                    })()}
+                </svg>
+
+                {blocks.map((b) => {
+                  const outputPorts = b.data?.keywords || b.data?.options || [];
+                  return (
+                    <Draggable
+                      key={b.id}
+                      position={{ x: b.x, y: b.y }}
+                      onDrag={(_, data) => {
+                        setBlocks((prev) => prev.map((blk) => (blk.id === b.id ? { ...blk, x: data.x, y: data.y } : blk)));
+                      }}
+                      onStop={() => {
+                        setTimeout(() => computeRects(), 40);
+                      }}
+                    >
+                      <Paper id={`node-${b.id}`} elevation={3} sx={{ position: "absolute", width: BLOCK_WIDTH, borderRadius: 2, userSelect: "none", zIndex: 3 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1.25, py: 0.6, bgcolor: blockColors[b.type], cursor: "move" }}>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Box sx={{ color: "white", display: "flex" }}>{getIconForType(b.type)}</Box>
+                            <Typography sx={{ color: "white", fontWeight: 700, fontSize: "0.9rem" }}>{b.type}</Typography>
+                          </Stack>
+                          <Stack direction="row" spacing={0.5}>
+                            <Tooltip title="Guardar como plantilla" arrow>
+                              <IconButton size="small" onClick={() => saveBlockAsTemplate(b)} sx={{ color: "white" }}>
+                                <SaveIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Editar" arrow>
+                              <IconButton size="small" onClick={() => openEditDialog(b)} sx={{ color: "white" }}>
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Eliminar" arrow>
+                              <IconButton size="small" onClick={() => deleteBlock(b.id)} sx={{ color: "white" }}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </Box>
+
+                        <Box sx={{ px: 2, py: 1.25, bgcolor: "background.paper", position: "relative", minHeight: 40 }}>
+                          {b.type === "Texto" && <Typography variant="body2" noWrap title={b.data?.text}>{String(b.data?.text ?? "").slice(0, 120) || "Sin texto"}</Typography>}
+                          {(b.type === "Imagen" || b.type === "Video" || b.type === "Documento" || b.type === "Audio") && <Typography variant="body2" noWrap title={b.data?.originalName}>Archivo: {b.data?.originalName || "No seleccionado"}</Typography>}
+                          {b.type === "Ubicación" && <Typography variant="body2" noWrap>Lat: {b.data?.lat || "-"}, Lng: {b.data?.lng || "-"}</Typography>}
+                          {b.type === "Encuesta" && <Typography variant="body2" noWrap title={b.data?.question}>Pregunta: {b.data?.question || "Sin pregunta"}</Typography>}
+
+                          <Stack spacing={0.5} sx={{ mt: 1 }}>
+                            {outputPorts.map((k: string, i: number) => {
+                              const portId = `opt-${i}`;
+                              return (
+                                <Box key={portId} sx={{ position: "relative" }}>
+                                  <Button variant="outlined" size="small" fullWidth sx={{ justifyContent: "flex-start", textTransform: "none" }}>
+                                    {k}
+                                  </Button>
+                                  <Box ref={registerOptionRef(b.id, portId)} sx={{ position: "absolute", right: -10, top: "50%", transform: "translateY(-50%)" }}>
+                                    <Tooltip title="Conectar desde esta opción" arrow>
+                                      <IconButton size="small" onClick={() => startConnectionFromOption(b.id, portId)} sx={{ color: blockColors[b.type] }}>
+                                        <FiberManualRecordIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </Box>
+                                </Box>
+                              );
+                            })}
+                          </Stack>
+                        </Box>
+
+                        <Box ref={registerInputRef(b.id)} sx={{ position: "absolute", left: -10, top: "50%", transform: "translateY(-50%)", zIndex: 5 }}>
+                          <Tooltip title="Aceptar conexión" arrow>
+                            <IconButton size="small" onClick={() => completeConnection(b.id)} sx={{ color: "rgba(0,0,0,0.54)" }}>
+                              <RadioButtonUncheckedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Paper>
+                    </Draggable>
+                  );
+                })}
+              </Box>
+            </Box>
+
+            <Box sx={{ position: "absolute", bottom: 16, left: 16, display: "flex", flexDirection: "column", gap: 1, zIndex: 6 }}>
+              <Tooltip title="Acercar" arrow>
+                <IconButton color="primary" onClick={() => setZoom((z) => Math.min(150, z + 10))} sx={{ bgcolor: "background.paper" }}>
+                  <AddCircleOutlineIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Alejar" arrow>
+                <IconButton color="primary" onClick={() => setZoom((z) => Math.max(30, z - 10))} sx={{ bgcolor: "background.paper" }}>
+                  <RemoveCircleOutlineIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Restablecer vista" arrow>
+                <IconButton color="primary" onClick={() => setZoom(100)} sx={{ bgcolor: "background.paper" }}>
+                  <FitScreenIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Bloquear movimiento" arrow>
+                <IconButton color="primary" onClick={() => setInteractive((p) => !p)} sx={{ bgcolor: "background.paper" }}>
+                  {interactive ? <LockOpenIcon /> : <LockIcon />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            <Box onMouseEnter={() => setMenuOpen(true)} onMouseLeave={() => setMenuOpen(false)} sx={{ position: "absolute", top: "50%", right: { xs: 8, sm: 16 }, transform: "translateY(-50%)", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, zIndex: 7 }}>
+              {menuOpen &&
+                optionDefs.map((opt, idx) => (
+                  <Zoom in={menuOpen} key={opt.label} style={{ transitionDelay: `${idx * 50}ms` }}>
+                    <Button variant="contained" color="primary" onClick={() => openDialogFor(opt.label)} startIcon={opt.icon} sx={{ borderRadius: "20px", justifyContent: "flex-start", minWidth: "170px" }}>
+                      {opt.label}
+                    </Button>
+                  </Zoom>
+                ))}
+              <Fab color="secondary" sx={{ boxShadow: 4 }} onClick={() => setMenuOpen((p) => !p)} aria-label="abrir opciones">
+                {menuOpen ? <CloseIcon /> : <AddIcon />}
+              </Fab>
+            </Box>
+
+            <Paper
+              elevation={4}
+              sx={{
+                position: "absolute",
+                bottom: 16,
+                right: 16,
+                width: MINIMAP_WIDTH,
+                height: MINIMAP_HEIGHT,
+                zIndex: 6,
+                overflow: "hidden",
+                bgcolor: "rgba(240, 240, 240, 0.95)",
+                border: `1px solid ${theme.palette.divider}`,
+                userSelect: "none",
+              }}
+            >
+              {blocks.map((b) => (
+                <Box
+                  key={`map-${b.id}`}
+                  sx={{
+                    position: "absolute",
+                    left: `${(b.x / CANVAS_WIDTH) * 100}%`,
+                    top: `${(b.y / CANVAS_HEIGHT) * 100}%`,
+                    width: `${(BLOCK_WIDTH / CANVAS_WIDTH) * 100}%`,
+                    height: "15px",
+                    bgcolor: blockColors[b.type] || "grey.500",
+                    borderRadius: "1px",
+                  }}
+                />
+              ))}
+              <Box
+                sx={{
+                  position: "absolute",
+                  left: `${(viewportRect.left / CANVAS_WIDTH) * 100}%`,
+                  top: `${(viewportRect.top / CANVAS_HEIGHT) * 100}%`,
+                  width: `${(viewportRect.width / CANVAS_WIDTH) * 100}%`,
+                  height: `${(viewportRect.height / CANVAS_HEIGHT) * 100}%`,
+                  border: `1px solid ${theme.palette.primary.main}`,
+                  bgcolor: "rgba(25, 118, 210, 0.15)",
+                  boxSizing: "border-box",
+                  transition: "all 50ms ease-out",
+                }}
+              />
+            </Paper>
+          </>
+        ) : (
+          <Paper sx={{ p: 2, height: "100%", overflowY: "auto" }}>
+            <Typography variant="h6" gutterBottom>
+              Lista de plantillas guardadas
+            </Typography>
+            <TableContainer>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Título</TableCell>
+                    <TableCell>Tipo</TableCell>
+                    <TableCell align="right">Acciones</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {templates.map((tpl) => (
+                    <TableRow key={tpl.id} hover>
+                      <TableCell>{tpl.id}</TableCell>
+                      <TableCell>{tpl.title}</TableCell>
+                      <TableCell>
+                        <Chip label={tpl.type} size="small" />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Button size="small" variant="outlined" onClick={() => insertTemplateIntoCanvas(tpl)}>
+                            Cargar
+                          </Button>
+                          <IconButton color="error" size="small" onClick={() => handleDeleteTemplate(tpl.id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {templates.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        No hay plantillas guardadas.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        )}
+      </Box>
+
+      <Drawer anchor="right" open={flowsDrawer} onClose={() => setFlowsDrawer(false)} sx={{ "& .MuiDrawer-paper": { width: { xs: "85vw", sm: 340 }, p: 2 } }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+          <ListAltIcon />
+          <Typography variant="h6">Mis Flujos</Typography>
+        </Box>
+        <Divider sx={{ mb: 1 }} />
+        <List>
+          {flows.map((flow) => (
+            <ListItem
+             key={flow.id}
+              secondaryAction={
+                <Stack direction="row" spacing={1}>
+                  <Tooltip title="Editar este flujo" arrow>
+                    <IconButton edge="end" color="primary" onClick={() => handleLoadFlow(flow.flow_id!, flow.name)}>
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Eliminar flujo" arrow>
+                    <IconButton edge="end" color="error" onClick={() => handleDeleteFlow(flow.flow_id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              }
+            >
+              <ListItemIcon>
+                <DescriptionIcon />
+              </ListItemIcon>
+              <ListItemText primary={flow.name} />
+            </ListItem>
+          ))}
+          {flows.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ px: 2 }}>
+              No se encontraron flujos.
+            </Typography>
+          )}
+        </List>
+      </Drawer>
+
+      <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="sm">
+        <DialogTitle>
+          {editingBlockId ? "Editar" : "Agregar"} {dialogOption}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2.5}>
+            {dialogOption === "Texto" && (
+              <Stack spacing={2}>
+                <FormControlLabel control={<Switch checked={forAll} onChange={(e) => setForAll(e.target.checked)} />} label="¿Para todos?" />
+                <TextField multiline minRows={5} placeholder="Ingresar mensaje..." value={textContent} onChange={(e) => setTextContent(e.target.value)} fullWidth />
+              </Stack>
+            )}
+
+            {(dialogOption === "Imagen" || dialogOption === "Video" || dialogOption === "Audio" || dialogOption === "Documento") && (
+              <Stack spacing={2}>
+                <Button variant="outlined" component="label" fullWidth sx={{ py: 2, position: "relative" }} disabled={isUploading}>
+                  Subir {dialogOption}
+                  {isUploading && <CircularProgress size={24} sx={{ position: "absolute", top: "50%", left: "50%", marginTop: "-12px", marginLeft: "-12px" }} />}
+                  <input type="file" hidden onChange={handleFileSelect} disabled={isUploading} accept={dialogOption === "Imagen" ? "image/*" : dialogOption === "Video" ? "video/*" : dialogOption === "Audio" ? "audio/*" : "*/*"} />
+                </Button>
+                {uploadedFileOriginalName && (
+                  <Typography variant="body2" color="text.secondary" align="center">
+                    Archivo subido: <strong>{uploadedFileOriginalName}</strong>
+                  </Typography>
+                )}
+                {/* --- MODIFICACIÓN: Se quita "(opcional)" de la etiqueta --- */}
+                {(dialogOption === "Imagen" || dialogOption === "Video" || dialogOption === "Documento") && <TextField label="Ingresar leyenda" value={legend} onChange={(e) => setLegend(e.target.value)} fullWidth />}
+              </Stack>
+            )}
+
+            {dialogOption === "Ubicación" && (
+              <Stack direction="row" spacing={2}>
+                <TextField label="Latitud" value={lat} onChange={(e) => setLat(e.target.value)} fullWidth />
+                <TextField label="Longitud" value={lng} onChange={(e) => setLng(e.target.value)} fullWidth />
+              </Stack>
+            )}
+
+            {dialogOption === "Encuesta" && (
+              <Stack spacing={2}>
+                <TextField label="Pregunta de la encuesta" value={surveyQuestion} onChange={(e) => setSurveyQuestion(e.target.value)} fullWidth />
+                <Typography variant="subtitle2">Opciones de respuesta</Typography>
+                {surveyOptions.map((option, index) => (
+                  <Stack direction="row" spacing={1} key={index} alignItems="center">
+                    <TextField size="small" fullWidth value={option} onChange={(e) => handleSurveyOptionChange(index, e.target.value)} placeholder={`Opción ${index + 1}`} />
+                    <IconButton onClick={() => removeSurveyOption(index)} size="small" disabled={surveyOptions.length <= 1}>
+                      <RemoveCircleOutlineIcon />
+                    </IconButton>
+                  </Stack>
+                ))}
+                <Button onClick={addSurveyOption} startIcon={<AddIcon />} size="small" sx={{ alignSelf: "flex-start" }}>
+                  Añadir opción
+                </Button>
+              </Stack>
+            )}
+
+            {dialogOption !== "Encuesta" && !(dialogOption === "Texto" && forAll) && (
+              <>
+                <Divider />
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>Palabras Clave de Respuesta</Typography>
+                </Box>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ my: 1 }}>
+                  {keywords.map((k) => (
+                    <Chip key={k} label={k} onDelete={() => removeKeyword(k)} />
+                  ))}
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <TextField placeholder="Añadir palabra clave" value={claveInput} onChange={(e) => setClaveInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addKeyword()} fullWidth size="small" />
+                  <IconButton color="primary" onClick={addKeyword}>
+                    <AddCircleIcon />
+                  </IconButton>
+                </Stack>
+              </>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDialog}>Cancelar</Button>
+          <Button variant="contained" onClick={addBlockFromDialog} disabled={isUploading || !isFormValid}>
+            {editingBlockId ? "Guardar Cambios" : "Agregar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
 };
 
 export default FlowBuilder;
