@@ -40,7 +40,7 @@ interface Chatbot {
     id: number;
     title: string;
     for_all: number;
-    flow: string;
+    flow: string; 
     active: number;
     instance_id: string;
     prevent_book_id: string | null;
@@ -69,6 +69,7 @@ export default function CampaxaChat() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [userId, setUserId] = useState<number | null>(null);
 
     // --- ESTADOS PARA DROPDOWNS ---
     const [instances, setInstances] = useState<Instance[]>([]);
@@ -81,7 +82,7 @@ export default function CampaxaChat() {
     const [chatbots, setChatbots] = useState<Chatbot[]>([]);
     const [titulo, setTitulo] = useState("");
     const [paraTodos, setParaTodos] = useState(true);
-    const [flujo, setFlujo] = useState<{ id: number, title: string } | null>(null);
+    const [flujo, setFlujo] = useState<Flow | null>(null);
     const [activo, setActivo] = useState(true);
     const [instancia, setInstancia] = useState("");
     const [editChatbot, setEditChatbot] = useState<Chatbot | null>(null);
@@ -111,14 +112,29 @@ export default function CampaxaChat() {
                 headers['Content-Type'] = 'application/json';
                 options.body = JSON.stringify(body);
             }
+
             const response = await fetch(`${config.API_URL}${endpoint}`, options);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data = await response.json();
-            if (data.success === false) throw new Error(data.msg || 'Error en la API');
-            return data;
+            
+            const contentType = response.headers.get("content-type");
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Error HTTP ${response.status}: ${errorText}`);
+            }
+
+            if (contentType && contentType.includes("application/json")) {
+                const data = await response.json();
+                if (data.success === false) {
+                    throw new Error(data.msg || 'La API indicó un error');
+                }
+                return data;
+            } else {
+                const responseText = await response.text();
+                console.error("La respuesta de la API no es JSON. Contenido recibido:", responseText);
+                throw new Error(`Respuesta inesperada del servidor para el endpoint: ${endpoint}`);
+            }
         } catch (err: any) {
             setError(err.message);
-            console.error(`Error en ${endpoint}:`, err);
+            console.error(`Error en la llamada a ${endpoint}:`, err);
             throw err;
         }
     }, []);
@@ -129,23 +145,24 @@ export default function CampaxaChat() {
         setError(null);
         try {
             const [
-                chatbotsData, campaignsData, instancesData, flowsData, phonebooksData, templatesData
+                chatbotsData, campaignsData, instancesData, flowsData, phonebooksData, templatesData, meData
             ] = await Promise.all([
                 apiCall('chatbot/get_mine'),
                 apiCall('broadcast/my_broadcast'),
                 apiCall('session/get_instances_with_status'),
                 apiCall('flow/get_mine'),
                 apiCall('user/get_phonebooks'),
-                apiCall('templet/my_templet')
+                apiCall('templet/my_templet'),
+                apiCall('user/get_me')
             ]);
             setChatbots(chatbotsData.data);
             setCampanas(campaignsData.data);
-            setInstances(instancesData.data.map((d: any) => d.i)); // La data viene anidada en 'i'
+            setInstances(instancesData.data.map((d: any) => d.i));
             setFlows(flowsData.data);
             setPhonebooks(phonebooksData.data);
             setTemplates(templatesData.data);
+            setUserId(meData.data.id);
         } catch (err) {
-            // El error ya se maneja en apiCall
         } finally {
             setIsLoading(false);
         }
@@ -164,26 +181,38 @@ export default function CampaxaChat() {
         }
         setIsSubmitting(true);
         setError(null);
+
         try {
-            const payload = {
-                id: editChatbot?.id,
-                title: titulo,
-                instance_id: instancia,
-                flow: flujo,
-                for_all: paraTodos,
-                prevent_book_id: null, // Este campo no está en el form, se deja null
-            };
             if (editChatbot) {
+                const payload = {
+                    id: editChatbot.id,
+                    title: titulo,
+                    instance_id: instancia,
+                    flow: flujo, // ✅ CORREGIDO: Enviar el objeto de flujo completo
+                    for_all: paraTodos,
+                    prevent_book_id: null,
+                };
                 await apiCall('chatbot/update_bot', 'POST', payload);
             } else {
+                if (!userId) {
+                    throw new Error("No se pudo obtener el ID del usuario. Inténtalo de nuevo.");
+                }
+                const payload = {
+                    add: true,
+                    title: titulo,
+                    instance_id: instancia,
+                    flow: flujo, // ✅ CORREGIDO: Enviar el objeto de flujo completo
+                    for_all: paraTodos,
+                    prevent_book_id: null,
+                    id: userId,
+                };
                 await apiCall('chatbot/add_bot', 'POST', payload);
             }
             setShowAddChatbot(false);
             setEditChatbot(null);
             resetChatbotForm();
-            await fetchInitialData(); // Recargar datos
+            await fetchInitialData();
         } catch (err) {
-            // El error se muestra en el estado `error`
         } finally {
             setIsSubmitting(false);
         }
@@ -196,18 +225,15 @@ export default function CampaxaChat() {
             setChatbots(prev => prev.filter(c => c.id !== deleteChatbotId));
             setDeleteChatbotId(null);
         } catch (err) {
-            // El error se gestiona en apiCall
         }
     };
     
     const handleToggleChatbotStatus = async (bot: Chatbot) => {
         const newStatus = !bot.active;
-        // Actualización optimista
         setChatbots(prev => prev.map(b => b.id === bot.id ? { ...b, active: newStatus ? 1 : 0 } : b));
         try {
             await apiCall('chatbot/change_bot_status', 'POST', { botId: bot.id, status: newStatus });
         } catch (err) {
-            // Revertir si falla
             setChatbots(prev => prev.map(b => b.id === bot.id ? { ...b, active: bot.active } : b));
         }
     };
@@ -218,6 +244,7 @@ export default function CampaxaChat() {
         setFlujo(null);
         setActivo(true);
         setInstancia("");
+        setEditChatbot(null);
     };
 
     // --- MANEJADORES CAMPAÑAS ---
@@ -237,20 +264,16 @@ export default function CampaxaChat() {
                 schedule: !!programar,
                 scheduleTimestamp: programar ? new Date(programar).getTime() : null,
                 timezone: zonaHoraria,
-                instance_id: instancia, // Asumimos que la instancia seleccionada se usa también aquí
+                instance_id: instancia,
                 delay_from: retrasoDesde.split(':')[1],
                 delay_to: retrasoHasta.split(':')[1],
             };
-            
-            // Backend no tiene ruta de edición, solo agregamos.
             await apiCall('broadcast/add_broadcast', 'POST', payload);
-            
             setShowAddCampana(false);
             setEditCampana(null);
             resetCampanaForm();
-            await fetchInitialData(); // Recargar datos
+            await fetchInitialData();
         } catch (err) {
-            // El error se muestra en el estado `error`
         } finally {
             setIsSubmitting(false);
         }
@@ -263,7 +286,6 @@ export default function CampaxaChat() {
             setCampanas(prev => prev.filter(c => c.broadcast_id !== deleteCampanaId));
             setDeleteCampanaId(null);
         } catch (err) {
-             // El error se gestiona en apiCall
         }
     };
 
@@ -316,7 +338,7 @@ export default function CampaxaChat() {
                     {activeMenu === "chatbot" ? "Chatbots" : "Campañas"}
                 </Typography>
                 
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
                 {activeMenu === "chatbot" && (
                     <>
@@ -324,7 +346,7 @@ export default function CampaxaChat() {
                             <Typography variant="h6" fontWeight={600}>
                                 Tus Chatbots
                             </Typography>
-                            <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => { setEditChatbot(null); resetChatbotForm(); setShowAddChatbot(true); }}>
+                            <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => { resetChatbotForm(); setShowAddChatbot(true); }}>
                                 Agregar
                             </Button>
                         </Box>
@@ -383,25 +405,52 @@ export default function CampaxaChat() {
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {chatbots.map((bot) => (
-                                                <TableRow key={bot.id}>
-                                                    <TableCell>{bot.title}</TableCell>
-                                                    <TableCell>{instances.find(i => i.instance_id === bot.instance_id)?.title || bot.instance_id}</TableCell>
-                                                    <TableCell>{JSON.parse(bot.flow).title || 'N/A'}</TableCell>
-                                                    <TableCell>{bot.for_all ? "Sí" : "No"}</TableCell>
-                                                    <TableCell>
-                                                        <Switch checked={!!bot.active} onChange={() => handleToggleChatbotStatus(bot)} />
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        <IconButton size="small" onClick={() => { setEditChatbot(bot); setTitulo(bot.title); setInstancia(bot.instance_id); setParaTodos(!!bot.for_all); setFlujo(JSON.parse(bot.flow)); setActivo(!!bot.active); setShowAddChatbot(true); }}>
-                                                            <Pencil size={16} />
-                                                        </IconButton>
-                                                        <IconButton size="small" color="error" onClick={() => setDeleteChatbotId(bot.id)}>
-                                                            <Trash2 size={16} />
-                                                        </IconButton>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                            {chatbots.map((bot) => {
+                                                // ✅ INICIO DE LA CORRECCIÓN DE VISUALIZACIÓN
+                                                let flowTitle = 'N/A';
+                                                let flowObjectFromBot: Flow | null = null;
+                                                try {
+                                                    // bot.flow es un string JSON: '{"id":1,"flow_id":"xyz...","title":"Mi Flujo"}'
+                                                    flowObjectFromBot = JSON.parse(bot.flow);
+                                                    flowTitle = flowObjectFromBot?.title || 'N/A';
+                                                } catch (e) {
+                                                    // Si falla el parseo (dato antiguo o incorrecto), se queda como 'N/A'
+                                                    console.error("No se pudo parsear el flujo del bot:", bot.flow);
+                                                }
+                                                // ✅ FIN DE LA CORRECCIÓN DE VISUALIZACIÓN
+
+                                                return (
+                                                    <TableRow key={bot.id}>
+                                                        <TableCell>{bot.title}</TableCell>
+                                                        <TableCell>{instances.find(i => i.instance_id === bot.instance_id)?.title || bot.instance_id}</TableCell>
+                                                        <TableCell>{flowTitle}</TableCell>
+                                                        <TableCell>{bot.for_all ? "Sí" : "No"}</TableCell>
+                                                        <TableCell>
+                                                            <Switch checked={!!bot.active} onChange={() => handleToggleChatbotStatus(bot)} />
+                                                        </TableCell>
+                                                        <TableCell align="right">
+                                                            <IconButton size="small" onClick={() => {
+                                                                // ✅ LÓGICA DE EDICIÓN CORREGIDA
+                                                                const flowIdToFind = flowObjectFromBot?.flow_id || null;
+                                                                const selectedFlow = flows.find(f => f.flow_id === flowIdToFind);
+                                                                
+                                                                setEditChatbot(bot);
+                                                                setTitulo(bot.title);
+                                                                setInstancia(bot.instance_id);
+                                                                setParaTodos(!!bot.for_all);
+                                                                setFlujo(selectedFlow || null);
+                                                                setActivo(!!bot.active);
+                                                                setShowAddChatbot(true);
+                                                            }}>
+                                                                <Pencil size={16} />
+                                                            </IconButton>
+                                                            <IconButton size="small" color="error" onClick={() => setDeleteChatbotId(bot.id)}>
+                                                                <Trash2 size={16} />
+                                                            </IconButton>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
                                         </TableBody>
                                     </Table>
                                 </TableContainer>}
@@ -410,26 +459,22 @@ export default function CampaxaChat() {
                     </>
                 )}
 
+                {/* --- SECCIÓN DE CAMPAÑAS (SIN CAMBIOS) --- */}
                 {activeMenu === "campanas" && (
                     <>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                            <Typography variant="h6" fontWeight={600}>
-                                Tus Campañas
-                            </Typography>
+                            <Typography variant="h6" fontWeight={600}>Tus Campañas</Typography>
                             <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => { setEditCampana(null); resetCampanaForm(); setShowAddCampana(true); }}>
                                 Agregar
                             </Button>
                         </Box>
-
-                         {(showAddCampana || editCampana) && (
+                        {(showAddCampana || editCampana) && (
                             <Card sx={{ mb: 3 }}>
                                 <CardContent>
                                     <Typography variant="h6" mb={2}>{editCampana ? 'Editar Campaña' : 'Nueva Campaña'}</Typography>
                                     <Box component="form" onSubmit={handleEnviarCampana}>
                                         <Grid container spacing={2}>
-                                            <Grid item xs={12} sm={6}>
-                                                <TextField fullWidth size="small" label="Título" value={campTitulo} onChange={(e) => setCampTitulo(e.target.value)} required />
-                                            </Grid>
+                                            <Grid item xs={12} sm={6}><TextField fullWidth size="small" label="Título" value={campTitulo} onChange={(e) => setCampTitulo(e.target.value)} required /></Grid>
                                             <Grid item xs={12} sm={6}>
                                                 <Select fullWidth size="small" value={instancia} onChange={(e) => setInstancia(e.target.value)} displayEmpty required>
                                                     <MenuItem value="" disabled>Seleccionar Instancia</MenuItem>
@@ -448,9 +493,7 @@ export default function CampaxaChat() {
                                                     {phonebooks.map(p => <MenuItem key={p.id} value={p.id}>{p.title}</MenuItem>)}
                                                 </Select>
                                             </Grid>
-                                            <Grid item xs={12} sm={6}>
-                                                <TextField fullWidth size="small" type="datetime-local" label="Programar (opcional)" InputLabelProps={{ shrink: true }} value={programar} onChange={(e) => setProgramar(e.target.value)} />
-                                            </Grid>
+                                            <Grid item xs={12} sm={6}><TextField fullWidth size="small" type="datetime-local" label="Programar (opcional)" InputLabelProps={{ shrink: true }} value={programar} onChange={(e) => setProgramar(e.target.value)} /></Grid>
                                             <Grid item xs={12} sm={6}>
                                                 <Select fullWidth size="small" value={zonaHoraria} onChange={(e) => setZonaHoraria(e.target.value)}>
                                                      <MenuItem value="America/Mexico_City">México</MenuItem>
@@ -475,7 +518,6 @@ export default function CampaxaChat() {
                                 </CardContent>
                             </Card>
                         )}
-                        
                         <Card>
                             <CardContent>
                                 {isLoading ? <CircularProgress /> :
@@ -498,7 +540,7 @@ export default function CampaxaChat() {
                                                     <TableCell>{JSON.parse(c.templet).title}</TableCell>
                                                     <TableCell>{JSON.parse(c.phonebook).title}</TableCell>
                                                     <TableCell>{c.status}</TableCell>
-                                                    <TableCell>{new Date(c.schedule).toLocaleString()}</TableCell>
+                                                    <TableCell>{c.schedule ? new Date(c.schedule).toLocaleString() : 'No programado'}</TableCell>
                                                     <TableCell align="right">
                                                         <IconButton size="small" color="error" onClick={() => setDeleteCampanaId(c.broadcast_id)}>
                                                             <Trash2 size={16} />

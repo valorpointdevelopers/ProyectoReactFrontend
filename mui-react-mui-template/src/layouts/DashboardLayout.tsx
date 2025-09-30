@@ -80,27 +80,27 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => {
 
 
 const fetchPerfil = async (name?: string) => {
-      try {
-        const response = await fetch(config.API_URL+'/user/get_me', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json', 'Authorization':'Bearer '+ localStorage.getItem('token') },
-      });
+  try {
+    const response = await fetch(config.API_URL + '/user/get_me', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+    });
 
-      const data = await response.json();
-      localStorage.setItem('uid',data.data.uid)
-      console.log(data);
-      const datosperfil = {
-        nombre: data.name,
-        email: data.email,
-        telefono: data.mobile
-      }
+    const data = await response.json();
+    localStorage.setItem('uid', data.data.uid)
+    console.log(data);
+    const datosperfil = {
+      nombre: data.name,
+      email: data.email,
+      telefono: data.mobile
+    }
 
-      } catch (error) {
-        console.log(error);
+  } catch (error) {
+    console.log(error);
 
-      }
-    };
-fetchPerfil(); 
+  }
+};
+fetchPerfil();
 
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({
@@ -128,9 +128,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   useEffect(() => {
     const fetchPerfil = async () => {
       try {
-        const response = await fetch(config.API_URL+"/user/get_me", {
+        const response = await fetch(config.API_URL + "/user/get_me", {
           method: "GET",
-          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token'),
+          headers: {
+            'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token'),
           },
         });
 
@@ -203,9 +204,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const handleLogout = () => {
     handleMenuClose();
 
-    localStorage.removeItem('token'); 
+    localStorage.removeItem('token');
 
-    navigate('/login'); 
+    navigate('/login');
   };
 
   const SubscriptionItem = ({ icon, label, value }: any) => {
@@ -349,11 +350,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
-      <AppBar 
-        position="fixed" 
-        sx={{ 
+      <AppBar
+        position="fixed"
+        sx={{
           zIndex: 1201,
-          borderRadius: 0 
+          borderRadius: 0
         }}
       >
         <Toolbar>
@@ -519,14 +520,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             icon={<CampaignIcon />}
             label="Campañas & Chatbots"
           />
-          <NavItem 
-            to="/panel/api" 
-            icon={<ApiIcon />} 
+          <NavItem
+            to="/panel/api"
+            icon={<ApiIcon />}
             label="Acceso API" />
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, overflowY: "auto" }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: "hidden" }}>
         <Toolbar />
         <Outlet />
       </Box>

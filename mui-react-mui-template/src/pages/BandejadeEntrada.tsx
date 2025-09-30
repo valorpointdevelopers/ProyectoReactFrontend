@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import {
     Box, Typography, TextField, InputAdornment, Chip, IconButton,
     Paper, useTheme, CircularProgress, List, Avatar, Menu, MenuItem,
-    AppBar, Toolbar, ListItem, ListItemAvatar, ListItemText, Button, Modal, Badge, Link
+    AppBar, Toolbar, ListItem, ListItemAvatar, ListItemText, Button, Modal, Badge, Link,
+    Fab, Zoom 
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import SendIcon from '@mui/icons-material/Send';
@@ -14,12 +15,17 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ArticleIcon from '@mui/icons-material/Article';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { io, Socket } from "socket.io-client";
 
 import welcomeCats from "../images/no-chat-found.svg";
 import { Chat, Message } from '../types';
 import config from "../config.json";
 import { db } from '../db';
+import ImagePreviewModal from './ImagePreviewModal';
+import notificationSound from '../notification/interface-124464.mp3';
+import lightModeBackground from '../images/LightMode.png';
+import darkModeBackground from '../images/DarkMode.jpg';
 
 // ======================= SUB-COMPONENTES ==========================
 
@@ -32,12 +38,12 @@ const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
         pending: { label: 'Pendiente', color: 'warning', emoji: '🤔' },
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, color: 'default', emoji: '' };
+    const configValue = statusConfig[status as keyof typeof statusConfig] || { label: status, color: 'default', emoji: '' };
 
     return (
         <Chip 
-            label={`${config.emoji} ${config.label}`}
-            color={config.color as any}
+            label={`${configValue.emoji} ${configValue.label}`}
+            color={configValue.color as any}
             size="small"
             sx={{ mr: 1, fontWeight: 'bold' }}
         />
@@ -208,13 +214,23 @@ const MessageBubble: React.FC<{ msg: Message }> = ({ msg }) => {
         const { url, mimetype, caption, fileName } = msg.media;
         
         if (mimetype?.startsWith('image/')) {
-            return <Link href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt={caption || 'imagen'} style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', display: 'block' }} /></Link>;
+            return (
+                <Link href={url} target="_blank" rel="noopener noreferrer">
+                    <img src={url} alt={caption || 'imagen'} style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', display: 'block' }} />
+                </Link>
+            );
         }
+        
         if (mimetype?.startsWith('video/')) {
-            return <video src={url} controls style={{ maxWidth: '100%', borderRadius: '8px' }} />;
+            return (
+                <video src={url} controls style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />
+            );
         }
+
         if (mimetype?.startsWith('audio/')) {
-            return <audio src={url} controls style={{ width: '100%' }} />;
+            return (
+                <audio src={url} controls style={{ width: '100%' }} />
+            );
         }
         
         let docIcon = <DescriptionIcon sx={{ fontSize: 40 }} />;
@@ -225,7 +241,7 @@ const MessageBubble: React.FC<{ msg: Message }> = ({ msg }) => {
             <Link href={url} target="_blank" rel="noopener noreferrer" download={fileName} sx={{ textDecoration: 'none', color: 'inherit' }}>
                 <Box display="flex" alignItems="center" gap={1} p={1} sx={{ backgroundColor: 'action.hover', borderRadius: 1 }}>
                     {docIcon}
-                    <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>{fileName}</Typography>
+                    <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>{fileName || 'Documento'}</Typography>
                 </Box>
             </Link>
         );
@@ -254,14 +270,32 @@ const MessageBubble: React.FC<{ msg: Message }> = ({ msg }) => {
 const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: boolean; typingInfo: { jid: string, isTyping: boolean } | null; onSendMessage: (text: string) => void; onSendMedia: (file: File) => void; onDeleteChat: () => void; onUpdateStatus: (status: 'open' | 'solved' | 'pending') => void; onGetSenderDetails: () => void; }> = (props) => {
     const { chat, messages, onSendMessage, isLoading, typingInfo, onSendMedia, onDeleteChat, onUpdateStatus, onGetSenderDetails } = props;
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
-    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+    const scrollContainerRef = useRef<null | HTMLDivElement>(null);
+    const [showScrollButton, setShowScrollButton] = useState(false);
     
+    const theme = useTheme();
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    }, [messages, chat]);
+
+    const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+        const target = event.currentTarget;
+        const threshold = 200;
+        const isScrolledUp = target.scrollHeight - target.scrollTop - target.clientHeight > threshold;
+        setShowScrollButton(isScrolledUp);
+    };
+    
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
     return (
-        <Box display="flex" flexDirection="column" height="100%" width="100%">
+        <Box display="flex" flexDirection="column" height="100%" width="100%" sx={{ position: 'relative' }}>
             <AppBar position="static" color="default" elevation={1}>
                 <Toolbar>
                     <Avatar src={chat.profilePicUrl} sx={{ mr: 2 }}>
-                       {!chat.profilePicUrl && (chat.name ? chat.name.charAt(0) : '?')}
+                        {!chat.profilePicUrl && (chat.name ? chat.name.charAt(0) : '?')}
                     </Avatar>
                     <Box flexGrow={1}>
                         <Typography variant="h6">{chat.name}</Typography>
@@ -274,18 +308,19 @@ const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: 
                 </Toolbar>
             </AppBar>
 
-            <Box 
-                flex={1} 
-                p={2} 
-                sx={{ 
-                    overflowY: 'auto', 
-                    backgroundColor: 'action.disabledBackground',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'flex-end'
+            <Box
+                flex={1}
+                p={2}
+                ref={scrollContainerRef}
+                onScroll={handleScroll}
+                sx={{
+                    overflowY: 'auto',
+                    backgroundImage: `url(${theme.palette.mode === 'dark' ? darkModeBackground : lightModeBackground})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
                 }}
             >
-                <Box> 
+                <Box>
                     {isLoading ? <Box display="flex" justifyContent="center" alignItems="center" height="100%"><CircularProgress /></Box> :
                         messages.length > 0 ? messages.map((msg) => <MessageBubble key={msg.msgId} msg={msg} />) :
                         <Box display="flex" justifyContent="center" alignItems="center" height="100%" flexDirection="column" color="text.secondary">
@@ -296,6 +331,21 @@ const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: 
                     <div ref={messagesEndRef} />
                 </Box>
             </Box>
+            
+            <Zoom in={showScrollButton}>
+                <Fab 
+                    color="primary" 
+                    size="small" 
+                    onClick={scrollToBottom}
+                    sx={{
+                        position: 'absolute',
+                        bottom: '80px',
+                        right: '24px',
+                    }}
+                >
+                    <KeyboardArrowDownIcon />
+                </Fab>
+            </Zoom>
 
             <Box p={1} sx={{ backgroundColor: 'background.default', display: 'flex', alignItems: 'center' }}>
                 <AttachmentMenu onSendMedia={onSendMedia} />
@@ -305,11 +355,9 @@ const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: 
     );
 };
 
-
 // ======================= COMPONENTE PRINCIPAL ==========================
 const BandejadeEntrada: React.FC = () => {
     const theme = useTheme();
-    const isDark = theme.palette.mode === "dark";
     const [chats, setChats] = useState<Chat[]>([]);
     const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -322,10 +370,28 @@ const BandejadeEntrada: React.FC = () => {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
     const [contactDetails, setContactDetails] = useState<{ name: string; status?: string; profilePhoto?: string; } | null>(null);
-    
+    const [pastedImage, setPastedImage] = useState<File | null>(null);
+
     const selectedChatRef = useRef<Chat | null>(null);
     const socketRef = useRef<Socket | null>(null);
     const typingTimeoutRef = useRef<number | null>(null);
+    const notificationAudio = useRef(new Audio(notificationSound));
+
+    useEffect(() => {
+        const unlockAudio = () => {
+            notificationAudio.current.play().catch(() => {});
+            notificationAudio.current.pause();
+            notificationAudio.current.currentTime = 0;
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('keydown', unlockAudio);
+        };
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('keydown', unlockAudio);
+        return () => {
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('keydown', unlockAudio);
+        };
+    }, []);
 
     useEffect(() => {
         selectedChatRef.current = selectedChat;
@@ -337,13 +403,35 @@ const BandejadeEntrada: React.FC = () => {
         return () => { document.removeEventListener('keydown', handleEscapeKey); };
     }, [selectedChat]);
 
+    useEffect(() => {
+        const handlePaste = (event: ClipboardEvent) => {
+            if (!selectedChatRef.current) return;
+            const items = event.clipboardData?.items;
+            if (!items) return;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const file = items[i].getAsFile();
+                    if (file) {
+                        event.preventDefault();
+                        setPastedImage(file);
+                    }
+                    break;
+                }
+            }
+        };
+        document.addEventListener('paste', handlePaste);
+        return () => {
+            document.removeEventListener('paste', handlePaste);
+        };
+    }, []);
+
     const transformBackendMessage = (msg: any, jid: string): Message => {
         const baseURL = new URL(config.API_URL).origin;
         const messageType = msg.type?.toLowerCase();
         
         if (['image', 'video', 'doc', 'aud', 'doc_cap'].includes(messageType)) {
             const mediaType = messageType === 'doc_cap' ? 'doc' : messageType;
-            let mimetype = msg.msgContext.mimetype;
+            let mimetype = msg.msgContext?.mimetype;
             if (mediaType === 'image' && !mimetype) {
                 mimetype = 'image/jpeg';
             }
@@ -352,10 +440,10 @@ const BandejadeEntrada: React.FC = () => {
                 msgId: msg.msgId, chatId: jid, fromMe: msg.route === 'outgoing',
                 timestamp: msg.timestamp, type: mediaType, status: msg.status,
                 media: { 
-                    url: `${baseURL}/media/${msg.msgContext.fileName}`, 
-                    fileName: msg.msgContext.fileName, 
+                    url: `${baseURL}/media/${msg.msgContext?.fileName}`, 
+                    fileName: msg.msgContext?.fileName, 
                     mimetype: mimetype,
-                    caption: msg.msgContext.caption || '' 
+                    caption: msg.msgContext?.caption || '' 
                 }
             };
         }
@@ -365,6 +453,29 @@ const BandejadeEntrada: React.FC = () => {
             type: 'text', status: msg.status
         };
     };
+
+    const formatLastMessagePreview = (message: Message): string => {
+        const prefix = message.fromMe ? "Tú: " : "";
+    
+        if (message.media?.caption) {
+            return `${prefix}${message.media.caption}`;
+        }
+        if (message.text) {
+            return `${prefix}${message.text}`;
+        }
+        if (message.media) {
+            switch (message.type) {
+                case 'image': return `${prefix}📷 Imagen`;
+                case 'video': return `${prefix}📹 Video`;
+                case 'audio':
+                case 'aud': return `${prefix}🎵 Audio`;
+                case 'doc':
+                case 'doc_cap': return `${prefix}📄 Documento`;
+                default: return `${prefix}📎 Archivo`;
+            }
+        }
+        return "Chat iniciado";
+    };
     
     useEffect(() => {
         const setupSockets = () => {
@@ -372,24 +483,52 @@ const BandejadeEntrada: React.FC = () => {
             const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
             socketRef.current = socket;
             const userId = localStorage.getItem('uid');
-            socket.on('connect', () => { if (userId) socket.emit('user_connected', { userId }); });
-            socket.on('whatsapp-status', ({ status }: { status: string }) => { setConnectionStatus(status); });
+
+            socket.on('connect', () => {
+                console.log('🔌 Conectado al servidor de Sockets.');
+                setConnectionStatus('open'); 
+                if (userId) socket.emit('user_connected', { userId });
+            });
+            
+            socket.on('whatsapp-status', ({ status }: { status: string }) => { 
+                setConnectionStatus(status); 
+            });
+            
             socket.on('push_new_msg', (data: any) => {
                 if (!data || !data.msg || !data.msg.remoteJid) { return; }
                 const newMessageRaw = data.msg;
                 const chatId = newMessageRaw.remoteJid;
                 const messageData = transformBackendMessage(newMessageRaw, chatId);
-                db.messages.put(messageData);
-                if (selectedChatRef.current?.jid === messageData.chatId) {
-                    setMessages(prev => { if (prev.some(msg => msg.msgId === messageData.msgId)) { return prev; } return [...prev, messageData]; });
-                } else {
-                    db.chats.where({ jid: messageData.chatId }).modify(chat => { chat.unreadCount = (chat.unreadCount || 0) + 1; });
+
+                if (!messageData.fromMe && (selectedChatRef.current?.jid !== messageData.chatId || document.hidden)) {
+                    notificationAudio.current.play().catch(error => console.error("Error al reproducir sonido:", error));
                 }
+
+                if (selectedChatRef.current?.jid === messageData.chatId) {
+                    setMessages(prev => {
+                        if (messageData.fromMe) {
+                            const tempMessage = [...prev].reverse().find(m => m.status === 'pending');
+                            if (tempMessage) {
+                                db.messages.delete(tempMessage.msgId);
+                                db.messages.put(messageData);
+                                return prev.map(m => m.msgId === tempMessage.msgId ? messageData : m);
+                            }
+                        }
+                        if (prev.some(msg => msg.msgId === messageData.msgId)) { return prev; }
+                        db.messages.put(messageData);
+                        return [...prev, messageData];
+                    });
+                } else {
+                     db.messages.put(messageData);
+                     db.chats.where({ jid: messageData.chatId }).modify(chat => { chat.unreadCount = (chat.unreadCount || 0) + 1; });
+                }
+
                 setChats(prev => {
                     const chatIndex = prev.findIndex(c => c.jid === messageData.chatId);
                     let newChats = [...prev];
                     const newTimestamp = new Date(messageData.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const lastMessageText = messageData.text || messageData.media?.caption || `📄 ${messageData.type}`;
+                    const lastMessageText = formatLastMessagePreview(messageData);
+
                     if (chatIndex > -1) {
                         const existingChat = newChats[chatIndex];
                         const isChatOpen = selectedChatRef.current?.jid === messageData.chatId;
@@ -404,6 +543,7 @@ const BandejadeEntrada: React.FC = () => {
                     return newChats;
                 });
             });
+
             socket.on('msg-status-updated', (updates: { id: string, jid: string, status: number }[]) => {
                 for (const update of updates) {
                     const statusMap: { [key: number]: Message['status'] } = { 3: 'delivered', 4: 'read' };
@@ -414,6 +554,7 @@ const BandejadeEntrada: React.FC = () => {
                     }
                 }
             });
+
             socket.on('presence-update', (data: { jid: string, presence: string }) => {
                 const { jid, presence } = data;
                 if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -424,8 +565,13 @@ const BandejadeEntrada: React.FC = () => {
                     setTypingInfo({ jid, isTyping: false });
                 }
             });
-            socket.on('disconnect', () => console.log('🔌 Desconectado del servidor de Sockets.'));
+            
+            socket.on('disconnect', () => {
+                console.log('🔌 Desconectado del servidor de Sockets.');
+                setConnectionStatus('close');
+            });
         };
+
         if (!socketRef.current) setupSockets();
         return () => {
             if (socketRef.current?.connected) socketRef.current.disconnect();
@@ -445,11 +591,31 @@ const BandejadeEntrada: React.FC = () => {
             if (data.success && Array.isArray(data.data)) {
                 if (data.userData?.selIns) setInstanceId(data.userData.selIns);
                 const serverChats: Chat[] = data.data.map((chat: any) => {
-                    let lastMessageText = 'Media';
-                    try { const parsed = JSON.parse(chat.last_message); lastMessageText = parsed?.msgContext?.text || `📄 ${parsed.type}`; }
-                    catch (e) { lastMessageText = chat.last_message || 'Chat iniciado'; }
+                    
+                    let lastMessageText = 'Chat iniciado';
+                    try {
+                        const parsedRawMessage = JSON.parse(chat.last_message);
+                        const lastMessageObject = transformBackendMessage(parsedRawMessage, chat.sender_jid);
+                        lastMessageText = formatLastMessagePreview(lastMessageObject);
+                    } catch (e) {
+                        if (typeof chat.last_message === 'string' && chat.last_message.trim() !== '') {
+                            lastMessageText = chat.last_message;
+                        }
+                    }
+
                     const cachedVersion = cachedChats.find(c => c.jid === chat.sender_jid);
-                    return { id: chat.id.toString(), jid: chat.sender_jid, name: chat.sender_name, lastMessage: lastMessageText, timestamp: chat.last_message_came ? new Date(chat.last_message_came).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', phoneNumber: chat.sender_mobile, dbChatId: chat.chat_id, unreadCount: cachedVersion?.unreadCount || 0, profilePicUrl: cachedVersion?.profilePicUrl, chatStatus: chat.chat_status || 'open' };
+                    return { 
+                        id: chat.id.toString(), 
+                        jid: chat.sender_jid, 
+                        name: chat.sender_name, 
+                        lastMessage: lastMessageText, 
+                        timestamp: chat.last_message_came ? new Date(chat.last_message_came).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', 
+                        phoneNumber: chat.sender_mobile, 
+                        dbChatId: chat.chat_id, 
+                        unreadCount: cachedVersion?.unreadCount || 0, 
+                        profilePicUrl: cachedVersion?.profilePicUrl, 
+                        chatStatus: chat.chat_status || 'open' 
+                    };
                 });
                 await db.chats.bulkPut(serverChats);
                 setChats(serverChats);
@@ -505,19 +671,32 @@ const BandejadeEntrada: React.FC = () => {
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }, 
                 body: JSON.stringify(body) 
             }); 
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); 
-            const data = await response.json(); 
-            if (!data.success) throw new Error(data.msg || 'Error en la API'); 
+            
+            const responseText = await response.text();
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.error("Respuesta inválida del servidor:", responseText);
+                throw new Error("Respuesta inválida del servidor.");
+            }
+
+            if (!response.ok) throw new Error(data.msg || `HTTP error! status: ${response.status}`); 
+            if (data.success === false) throw new Error(data.msg || 'Error en la API'); 
+            
             return data; 
         } catch (error) { 
-            console.error(`Error en ${path}:`, error); 
-            alert(`Error: ${(error as Error).message}`); 
+            console.error(`Error en la llamada a ${path}:`, error); 
             throw error; 
         } 
     };
 
-    const handleSendMedia = async (file: File) => {
-        if (!selectedChat || !instanceId) return;
+    const handleSendMedia = async (file: File, caption: string = '') => {
+        if (!selectedChat || !instanceId) {
+            alert('Selecciona un chat y asegúrate que la instancia esté disponible.');
+            return;
+        }
+        
         const tempId = `temp_${Date.now()}`;
         let mediaType: Message['type'] = 'doc';
         if (file.type.startsWith('image/')) mediaType = 'image';
@@ -525,8 +704,18 @@ const BandejadeEntrada: React.FC = () => {
         if (file.type.startsWith('audio/')) mediaType = 'audio';
         
         const optimisticMessage: Message = {
-            msgId: tempId, chatId: selectedChat.jid, fromMe: true, timestamp: Math.floor(Date.now() / 1000),
-            type: mediaType, status: 'pending', media: { url: URL.createObjectURL(file), mimetype: file.type, fileName: file.name, }
+            msgId: tempId, 
+            chatId: selectedChat.jid, 
+            fromMe: true, 
+            timestamp: Math.floor(Date.now() / 1000),
+            type: mediaType, 
+            status: 'pending', 
+            media: { 
+                url: URL.createObjectURL(file), 
+                mimetype: file.type, 
+                fileName: file.name,
+                caption: caption
+            }
         };
 
         setMessages(prev => [...prev, optimisticMessage]);
@@ -534,15 +723,39 @@ const BandejadeEntrada: React.FC = () => {
 
         const formData = new FormData();
         formData.append('file', file);
+
         try {
-            const uploadResponse = await fetch(`${config.API_URL}user/return_url`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: formData });
-            const uploadData = await uploadResponse.json();
-            if (!uploadData.success) throw new Error('Error al subir el archivo.');
+            const uploadResponse = await fetch(`${config.API_URL}user/return_url`, { 
+                method: 'POST', 
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }, 
+                body: formData 
+            });
             
-            const payload = { toJid: selectedChat.jid, toName: selectedChat.name, chatId: selectedChat.jid, instance: instanceId, fileName: uploadData.filename, originalFile: uploadData.originalName, caption: '' };
-            await apiCall(`inbox/send_${mediaType}`, payload);
-        } catch (error) {
+            const uploadData = await uploadResponse.json();
+            if (!uploadData.success) throw new Error(uploadData.msg || 'Error al subir el archivo.');
+            
+            let payload: any = { 
+                toJid: selectedChat.jid, 
+                toName: selectedChat.name, 
+                chatId: selectedChat.jid, 
+                instance: instanceId, 
+                caption: caption 
+            };
+
+            if (mediaType === 'image') {
+                payload.image = uploadData.filename;
+                payload.fileName = uploadData.originalName;
+            } else {
+                payload.fileName = uploadData.filename;
+                payload.originalFile = uploadData.originalName;
+            }
+            
+            const endpointType = mediaType === 'audio' ? 'aud' : mediaType;
+            await apiCall(`inbox/send_${endpointType}`, payload);
+
+        } catch (error: any) {
             console.error("Fallo al enviar media:", error);
+            alert(`No se pudo enviar el archivo: ${error.message}`);
             await db.messages.update(tempId, { status: 'error' });
             setMessages(prev => prev.map(m => m.msgId === tempId ? { ...m, status: 'error' } : m));
         }
@@ -587,14 +800,34 @@ const BandejadeEntrada: React.FC = () => {
     };
 
     return (
-        <Box display="flex" height="calc(100vh - 64px)" width="100%" bgcolor={theme.palette.background.default} overflow="hidden" sx={{ flexDirection: { xs: "column", sm: "row" } }}>
+        <Box display="flex" height="95%" width="100%" bgcolor={theme.palette.background.default} overflow="hidden" sx={{ flexDirection: { xs: "column", sm: "row" } }}>
             <DeleteChatModal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} onConfirm={confirmDeleteChat} chatName={selectedChat?.name || ''} />
             <ContactDetailsModal open={detailsModalOpen} onClose={() => setDetailsModalOpen(false)} details={contactDetails} />
+
+            <ImagePreviewModal
+                open={!!pastedImage}
+                imageFile={pastedImage}
+                onClose={() => setPastedImage(null)}
+                onSend={async (file, caption) => {
+                    await handleSendMedia(file, caption);
+                    setPastedImage(null);
+                }}
+            />
 
             <Paper elevation={1} sx={{ width: { xs: "100%", sm: "400px" }, p: 2, borderRight: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', display: "flex", flexDirection: "column", height: "100%", boxSizing: 'border-box' }}>
                 <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
                     <Typography variant="h5">Chats</Typography>
-                    <Chip label={connectionStatus} color={connectionStatus === 'open' ? 'success' : 'warning'} size="small" />
+                    <Chip 
+                        label={
+                            connectionStatus === 'open' ? 'Conectado' :
+                            connectionStatus === 'connecting' ? 'Conectando...' : 'Desconectado'
+                        } 
+                        color={
+                            connectionStatus === 'open' ? 'success' :
+                            connectionStatus === 'connecting' ? 'warning' : 'error'
+                        } 
+                        size="small" 
+                    />
                 </Box>
                 <TextField variant="outlined" size="small" placeholder="Buscar o iniciar un chat nuevo" fullWidth InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>), }} sx={{mb: 2}} />
                 <Box flex={1} sx={{ overflowY: 'auto' }}>
@@ -610,7 +843,7 @@ const BandejadeEntrada: React.FC = () => {
                 {selectedChat ?
                     <ConversationView
                         chat={selectedChat} messages={messages} isLoading={isLoadingMessages} typingInfo={typingInfo}
-                        onSendMessage={handleSendMessage} onSendMedia={handleSendMedia}
+                        onSendMessage={handleSendMessage} onSendMedia={(file) => handleSendMedia(file)}
                         onDeleteChat={handleDeleteChat} onUpdateStatus={handleUpdateChatStatus}
                         onGetSenderDetails={handleGetSenderDetails}
                     /> :
