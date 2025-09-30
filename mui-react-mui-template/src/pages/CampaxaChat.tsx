@@ -459,7 +459,7 @@ export default function CampaxaChat() {
                     </>
                 )}
 
-                {/* --- SECCIÓN DE CAMPAÑAS (SIN CAMBIOS) --- */}
+                {/* --- SECCIÓN DE CAMPAÑAS--- */}
                 {activeMenu === "campanas" && (
                     <>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>

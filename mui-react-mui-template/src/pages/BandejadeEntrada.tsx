@@ -83,7 +83,9 @@ const MessageInput: React.FC<{ onSendMessage: (text: string) => void; disabled?:
     return (
         <Paper component="form" onSubmit={handleSubmit} elevation={2} sx={{ p: '4px 8px', display: 'flex', alignItems: 'center', width: '100%', backgroundColor: 'background.default' }}>
             <TextField fullWidth variant="standard" placeholder="Escribe un mensaje..." value={text} onChange={(e) => setText(e.target.value)} disabled={disabled} InputProps={{ disableUnderline: true }} autoComplete="off" />
-            <IconButton type="submit" color="primary" disabled={!text.trim() || disabled}><SendIcon /></IconButton>
+            <IconButton type="submit" sx={{ color: 'text.primary' }} disabled={!text.trim() || disabled}>
+                <SendIcon />
+            </IconButton>
         </Paper>
     );
 };
@@ -152,7 +154,9 @@ const AttachmentMenu: React.FC<{ onSendMedia: (file: File) => void; }> = ({ onSe
     return (
         <Box>
             <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
-            <IconButton onClick={handleClick}><AttachFileIcon /></IconButton>
+            <IconButton onClick={handleClick} sx={{ color: 'text.primary' }}>
+                <AttachFileIcon />
+            </IconButton>
             <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
                 <MenuItem onClick={() => openFileDialog('image/*')}>Imagen</MenuItem>
                 <MenuItem onClick={() => openFileDialog('video/*')}>Video</MenuItem>
@@ -354,6 +358,7 @@ const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: 
         </Box>
     );
 };
+
 
 // ======================= COMPONENTE PRINCIPAL ==========================
 const BandejadeEntrada: React.FC = () => {
@@ -800,7 +805,7 @@ const BandejadeEntrada: React.FC = () => {
     };
 
     return (
-        <Box display="flex" height="95%" width="100%" bgcolor={theme.palette.background.default} overflow="hidden" sx={{ flexDirection: { xs: "column", sm: "row" } }}>
+        <Box display="flex" height="94.9%" width="100%" bgcolor={theme.palette.background.default} overflow="hidden" sx={{ flexDirection: { xs: "column", sm: "row" } }}>
             <DeleteChatModal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} onConfirm={confirmDeleteChat} chatName={selectedChat?.name || ''} />
             <ContactDetailsModal open={detailsModalOpen} onClose={() => setDetailsModalOpen(false)} details={contactDetails} />
 
