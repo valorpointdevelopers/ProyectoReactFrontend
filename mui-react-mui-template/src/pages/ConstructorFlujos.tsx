@@ -291,7 +291,7 @@ const FlowBuilder: React.FC = () => {
     }
   }, [forAll, dialogOption]);
 
-  // --- MODIFICACIÓN: Lógica de validación actualizada ---
+  // --- Lógica de validación--
   const isFormValid = useMemo(() => {
     if (!dialogOption) return false;
 
@@ -304,11 +304,9 @@ const FlowBuilder: React.FC = () => {
       case "Imagen":
       case "Video":
       case "Documento":
-        // Ahora requiere archivo, leyenda y palabras clave
         return !!uploadedFileUrl && legend.trim() !== "" && keywords.length > 0;
 
       case "Audio":
-        // Audio no tiene leyenda, así que requiere archivo y palabras clave
         return !!uploadedFileUrl && keywords.length > 0;
 
       case "Ubicación":
@@ -485,40 +483,56 @@ const FlowBuilder: React.FC = () => {
     }
   };
 
-  const handleLoadFlow = async (flowId: string, flowTitle: string) => {
-    try {
-      const data = await apiService.getFlowById(flowId);
-      const nodes = Array.isArray(data.nodes) ? data.nodes : [];
-      const edges = Array.isArray(data.edges) ? data.edges : [];
+ const handleLoadFlow = async (flowId: string, flowTitle: string) => {
+    try {
+        const data = await apiService.getFlowById(flowId);
+        const nodes = Array.isArray(data.nodes) ? data.nodes : [];
+        const edges = Array.isArray(data.edges) ? data.edges : [];
 
-      const mappedBlocks: Block[] = nodes.map((n: any) => ({
-        id: String(n.id),
-        type: normalizeType(n.nodeType),
-        x: n.position?.x ?? BLOCK_BASE_X,
-        y: n.position?.y ?? BLOCK_BASE_Y,
-        data: {
-          ...n.data?.state,
-          keywords: n.data?.state?.options || [],
-          forAll: (n.data?.state?.options || []).includes("{{OTHER_MSG}}"),
-        },
-      }));
+        const mappedBlocks: Block[] = nodes.map((n: any) => ({
+            id: String(n.id),
+            type: normalizeType(n.nodeType),
+            x: n.position?.x ?? BLOCK_BASE_X,
+            y: n.position?.y ?? BLOCK_BASE_Y,
+            data: {
+                ...n.data?.state,
+                keywords: n.data?.state?.options || [],
+                forAll: (n.data?.state?.options || []).includes("{{OTHER_MSG}}"),
+            },
+        }));
 
-      const mappedConns: Connection[] = edges
-        .map((e: any) => (e.source && e.target ? ({ from: String(e.source), to: String(e.target), fromPort: e.sourceHandle || "opt-0" } as Connection) : null))
-        .filter(Boolean) as Connection[];
+        const mappedConns: Connection[] = edges
+            .map((e: any) => {
+                if (!e.source || !e.target) return null;
 
-      setBlocks(mappedBlocks);
-      setConnections(mappedConns);
-      setTitle(flowTitle);
-      setCurrentFlowId(flowId);
-      setFlowsDrawer(false);
-      setMainView("canvas");
-    } catch (err: any) {
-      console.error("Error cargando flujo:", err);
-      window.alert(err.message || "No se pudo cargar el flujo");
-    }
-  };
+                const sourceNode = mappedBlocks.find(b => String(b.id) === String(e.source));
+                if (!sourceNode) return null;
+                
+                const options = sourceNode.data?.keywords || sourceNode.data?.options || [];
+                const portIndex = options.indexOf(e.sourceHandle);
+                
+                // Si encontramos el índice, creamos el ID del puerto. Si no, usamos un default.
+                const fromPort = portIndex !== -1 ? `opt-${portIndex}` : e.sourceHandle || "opt-0";
 
+                return { 
+                    from: String(e.source), 
+                    to: String(e.target), 
+                    fromPort: fromPort
+                };
+            })
+            .filter(Boolean) as Connection[];
+
+        setBlocks(mappedBlocks);
+        setConnections(mappedConns);
+        setTitle(flowTitle);
+        setCurrentFlowId(flowId);
+        setFlowsDrawer(false);
+        setMainView("canvas");
+    } catch (err: any) {
+        console.error("Error cargando flujo:", err);
+        window.alert(err.message || "No se pudo cargar el flujo");
+    }
+};
   const randomString = (length: number) => {
     let result = "";
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -528,47 +542,88 @@ const FlowBuilder: React.FC = () => {
     return result;
   };
 
-  const handleSaveFlowToServer = async () => {
-    try {
-      if (!title.trim()) return window.alert("Por favor, dale un título al flujo.");
+const handleSaveFlowToServer = async () => {
+    try {
+        if (!title.trim()) return window.alert("Por favor, dale un título al flujo.");
 
-      const mappedNodes = blocks.map((b) => {
-        const stateData = { ...b.data };
-        if (stateData.keywords) {
-          stateData.options = stateData.keywords;
-          delete stateData.keywords;
-        }
+        const mappedNodes = blocks.map((b) => {
+            const stateData = { ...b.data };
 
-        return {
-          id: b.id,
-          type: "CustomNode",
-          nodeType: mapBlockTypeToServer(b.type),
-          position: { x: b.x, y: b.y },
-          data: { state: stateData },
-        };
-      });
+            // --- Modificaciones existentes ---
+            if (typeof stateData.forAll !== 'undefined') {
+                delete stateData.forAll;
+            }
+            if (stateData.keywords) {
+                stateData.options = stateData.keywords;
+                delete stateData.keywords;
+            }
 
-      const mappedEdges = connections.map((c) => ({ source: c.from, target: c.to, sourceHandle: c.fromPort }));
+            if (b.type === "Imagen" || b.type === "Video" || b.type === "Audio" || b.type === "Documento") {
+                if (stateData.url && typeof stateData.url === 'string') {
+                    const filename = stateData.url.split('/').pop();
+                    stateData.file = filename;
+                    delete stateData.url;
+                    delete stateData.originalName;
+                }
+            }
 
-      const flowId = currentFlowId && !currentFlowId.startsWith(UNTITLED_FLOW_ID_PREFIX) ? currentFlowId : `${randomString(32)}`;
+            const backendDataStructure = {
+                data: "data",
+                source: false,
+                state: stateData,
+            };
 
-      const payload = {
-        title: title,
-        nodes: mappedNodes,
-        edges: mappedEdges,
-        flowId,
-      };
+            return {
+                id: b.id,
+                type: "CustomNode",
+                nodeType: mapBlockTypeToServer(b.type),
+                position: { x: b.x, y: b.y },
+                data: backendDataStructure,
+                width: BLOCK_WIDTH,
+                height: 214,
+                dragging: false,
+                selected: false,
+                positionAbsolute: { x: b.x, y: b.y },
+                keyword: stateData.options || [],
+                msgContent: { text: stateData.text || '' },
+            };
+        });
 
-      await apiService.addFlow(payload);
+        const mappedEdges = connections.map((c) => {
+            const sourceBlock = blocks.find(b => b.id === c.from);
+            if (!sourceBlock) return null;
 
-      window.alert("Flujo guardado en servidor correctamente");
-      setCurrentFlowId(flowId);
-      await loadFlows();
-    } catch (err: any) {
-      console.error("Error guardando flujo:", err);
-      window.alert(err.message || "No se pudo guardar el flujo");
-    }
-  };
+            const options = (sourceBlock.data?.keywords || sourceBlock.data?.options || []);
+            const portIndex = parseInt(c.fromPort.split('-')[1], 10);
+            const sourceHandleValue = options[portIndex] || c.fromPort;
+
+            return {
+                source: c.from,
+                target: c.to,
+                sourceHandle: sourceHandleValue,
+                id: `reactflow_edge-${c.from}${sourceHandleValue}-${c.to}undefined_target`,
+            };
+        }).filter(Boolean);
+
+        const flowId = currentFlowId && !currentFlowId.startsWith(UNTITLED_FLOW_ID_PREFIX) ? currentFlowId : `${randomString(32)}`;
+
+        const payload = {
+            title: title,
+            nodes: mappedNodes,
+            edges: mappedEdges,
+            flowId,
+        };
+
+        await apiService.addFlow(payload);
+
+        window.alert("Flujo guardado en servidor correctamente");
+        setCurrentFlowId(flowId);
+        await loadFlows();
+    } catch (err: any) {
+        console.error("Error guardando flujo:", err);
+        window.alert(err.message || "No se pudo guardar el flujo");
+    }
+};
 
   const handleDeleteFlow = async (flowId: string | undefined) => {
     if (!flowId) return;
@@ -1172,7 +1227,6 @@ const FlowBuilder: React.FC = () => {
                     Archivo subido: <strong>{uploadedFileOriginalName}</strong>
                   </Typography>
                 )}
-                {/* --- MODIFICACIÓN: Se quita "(opcional)" de la etiqueta --- */}
                 {(dialogOption === "Imagen" || dialogOption === "Video" || dialogOption === "Documento") && <TextField label="Ingresar leyenda" value={legend} onChange={(e) => setLegend(e.target.value)} fullWidth />}
               </Stack>
             )}
