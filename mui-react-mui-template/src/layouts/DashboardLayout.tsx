@@ -124,6 +124,59 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     email: '',
     mobile: ''
   });
+  const [originalUserData, setOriginalUserData] = useState({
+    name: '',
+    email: '',
+    mobile: ''
+  });
+
+  const [password, setPassword] = useState('');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setUserData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleProfileUpdate = async () => {
+    const dataToUpdate: { name: string; email: string; mobile: string; newPassword?: string } = {
+      ...userData,
+    };
+
+    if (password) {
+      dataToUpdate.newPassword = password;
+    }
+
+    try {
+      const response = await fetch(config.API_URL + "/user/update_profile", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token'),
+        },
+        body: JSON.stringify(dataToUpdate),
+      });
+
+      if (response.ok) {
+        console.log("Profile updated successfully");
+        const emailChanged = originalUserData.email !== userData.email;
+        if (password || emailChanged) {
+          handleLogout();
+        } else {
+          handleProfileClose();
+        }
+      } else {
+        console.error("Failed to update profile. Status:", response.status);
+        try {
+          const errorData = await response.json();
+          console.error("API Error Body:", errorData);
+        } catch (e) {
+          console.error("Could not parse error response as JSON.", await response.text());
+        }
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchPerfil = async () => {
@@ -137,11 +190,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         const { data } = await response.json();
         console.log(data);
 
-        setUserData({
+        const initialData = {
           name: data.name || '',
           email: data.email || '',
           mobile: data.mobile || ''
-        });
+        };
+        setUserData(initialData);
+        setOriginalUserData(initialData);
 
       } catch (error) {
         console.error(error);
@@ -178,6 +233,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleProfileClose = () => {
     setProfileOpen(false);
+    setPassword('');
   };
 
   const handlePlansClick = () => {
@@ -663,9 +719,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Nombre"
+                name="name"
                 value={userData.name}
+                onChange={handleInputChange}
                 InputProps={{
-                  readOnly: true,
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
                       <DriveFileRenameOutlineIcon fontSize="small" />
@@ -678,9 +735,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Correo electrónico"
+                name="email"
                 value={userData.email}
+                onChange={handleInputChange}
                 InputProps={{
-                  readOnly: true,
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
                       <MailOutlineIcon fontSize="small" />
@@ -693,9 +751,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Tu número de móvil"
+                name="mobile"
                 value={userData.mobile}
+                onChange={handleInputChange}
                 InputProps={{
-                  readOnly: true,
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
                       <WhatsAppIcon fontSize="small" />
@@ -710,6 +769,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 label="Contraseña"
                 type="password"
                 variant="outlined"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 InputProps={{
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
@@ -730,6 +791,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <Button
             variant="contained"
             fullWidth
+            onClick={handleProfileUpdate}
             sx={{
               backgroundColor: 'primary.main',
               "&:hover": {

@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff, Email as EmailIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import config from "../config";
 
 export default function RecuperarContrasena() {
   const [email, setEmail] = React.useState("");
@@ -21,7 +22,7 @@ export default function RecuperarContrasena() {
   const navigate = useNavigate();
 
   const validateEmail = (value: string) =>
-    /^(?:[a-zA-Z0-9_'^&\/+{}!#$%*?|~.-]+)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(value);
+    /^(?:[a-zA-Z0-9_\'^&\/+{}!#$%*?|~.-]+)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(value);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,15 +38,28 @@ export default function RecuperarContrasena() {
 
     setSubmitting(true);
     try {
-      await new Promise((res) => setTimeout(res, 1000));
-      setAlert({ type: "success", msg: `Se ha enviado un correo de recuperación a ${email}` });
-      setEmail("");
+            const response = await fetch(config.API_URL + '/user/send_resovery', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email }),
+      });
+
+      if (response.ok) {
+        setAlert({ type: "success", msg: 'Se envió un link de recuperación. Por favor revisa tu correo.' });
+        setEmail("");
+      } else {
+        const errorData = await response.json();
+        setAlert({ type: "error", msg: errorData.message || "Ocurrió un error. Inténtalo de nuevo." });
+      }
     } catch (err) {
       setAlert({ type: "error", msg: "Ocurrió un error. Inténtalo de nuevo." });
     } finally {
       setSubmitting(false);
     }
   };
+
 
   return (
     <Box
@@ -73,8 +87,8 @@ export default function RecuperarContrasena() {
         }}
       >
         <Box textAlign="center" mb={3}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            Recuperar contraseña
+          <Typography variant="h5" fontWeight={700} gutterBottom>
+            ¿Olvidaste tu contraseña?
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Ingresa tu correo para recibir instrucciones y restablecer tu contraseña.
