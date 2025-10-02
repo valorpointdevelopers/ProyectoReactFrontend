@@ -139,7 +139,6 @@ export default function CampaxaChat() {
         }
     }, []);
 
-    // --- CARGA DE DATOS INICIAL ---
     const fetchInitialData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -188,7 +187,7 @@ export default function CampaxaChat() {
                     id: editChatbot.id,
                     title: titulo,
                     instance_id: instancia,
-                    flow: flujo, // ✅ CORREGIDO: Enviar el objeto de flujo completo
+                    flow: flujo, 
                     for_all: paraTodos,
                     prevent_book_id: null,
                 };
@@ -201,7 +200,7 @@ export default function CampaxaChat() {
                     add: true,
                     title: titulo,
                     instance_id: instancia,
-                    flow: flujo, // ✅ CORREGIDO: Enviar el objeto de flujo completo
+                    flow: flujo, 
                     for_all: paraTodos,
                     prevent_book_id: null,
                     id: userId,
@@ -406,18 +405,14 @@ export default function CampaxaChat() {
                                         </TableHead>
                                         <TableBody>
                                             {chatbots.map((bot) => {
-                                                // ✅ INICIO DE LA CORRECCIÓN DE VISUALIZACIÓN
                                                 let flowTitle = 'N/A';
                                                 let flowObjectFromBot: Flow | null = null;
                                                 try {
-                                                    // bot.flow es un string JSON: '{"id":1,"flow_id":"xyz...","title":"Mi Flujo"}'
                                                     flowObjectFromBot = JSON.parse(bot.flow);
                                                     flowTitle = flowObjectFromBot?.title || 'N/A';
                                                 } catch (e) {
-                                                    // Si falla el parseo (dato antiguo o incorrecto), se queda como 'N/A'
                                                     console.error("No se pudo parsear el flujo del bot:", bot.flow);
                                                 }
-                                                // ✅ FIN DE LA CORRECCIÓN DE VISUALIZACIÓN
 
                                                 return (
                                                     <TableRow key={bot.id}>
@@ -430,7 +425,6 @@ export default function CampaxaChat() {
                                                         </TableCell>
                                                         <TableCell align="right">
                                                             <IconButton size="small" onClick={() => {
-                                                                // ✅ LÓGICA DE EDICIÓN CORREGIDA
                                                                 const flowIdToFind = flowObjectFromBot?.flow_id || null;
                                                                 const selectedFlow = flows.find(f => f.flow_id === flowIdToFind);
                                                                 
