@@ -78,31 +78,6 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => {
   );
 };
 
-
-const fetchPerfil = async (name?: string) => {
-  try {
-    const response = await fetch(config.API_URL + '/user/get_me', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
-    });
-
-    const data = await response.json();
-    localStorage.setItem('uid', data.data.uid)
-    console.log(data);
-    const datosperfil = {
-      nombre: data.name,
-      email: data.email,
-      telefono: data.mobile
-    }
-
-  } catch (error) {
-    console.log(error);
-
-  }
-};
-fetchPerfil();
-
-
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onToggleTheme,
   mode = "light",
@@ -124,25 +99,79 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     email: '',
     mobile: ''
   });
+  const [originalUserData, setOriginalUserData] = useState({
+    name: '',
+    email: '',
+    mobile: ''
+  });
+
+  const [password, setPassword] = useState('');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setUserData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleProfileUpdate = async () => {
+    const dataToUpdate: { name: string; email: string; mobile: string; newPassword?: string } = {
+      ...userData,
+    };
+
+    if (password) {
+      dataToUpdate.newPassword = password;
+    }
+
+    try {
+      const response = await fetch(config.API_URL + "/user/update_profile", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token'),
+        },
+        body: JSON.stringify(dataToUpdate),
+      });
+
+      if (response.ok) {
+        console.log("Profile updated successfully");
+        const emailChanged = originalUserData.email !== userData.email;
+        if (password || emailChanged) {
+          handleLogout();
+        } else {
+          handleProfileClose();
+        }
+      } else {
+        console.error("Failed to update profile. Status:", response.status);
+        try {
+          const errorData = await response.json();
+          console.error("API Error Body:", errorData);
+        } catch (e) {
+          console.error("Could not parse error response as JSON.", await response.text());
+        }
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchPerfil = async () => {
       try {
-        const response = await fetch(config.API_URL + "/user/get_me", {
+        const response = await fetch(config.API_URL+"/user/get_me", {
           method: "GET",
-          headers: {
-            'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token'),
+          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token'),
           },
         });
 
         const { data } = await response.json();
         console.log(data);
 
-        setUserData({
+        const initialData = {
           name: data.name || '',
           email: data.email || '',
           mobile: data.mobile || ''
-        });
+        };
+        setUserData(initialData);
+        setOriginalUserData(initialData);
 
       } catch (error) {
         console.error(error);
@@ -179,6 +208,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleProfileClose = () => {
     setProfileOpen(false);
+    setPassword('');
   };
 
   const handlePlansClick = () => {
@@ -204,9 +234,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const handleLogout = () => {
     handleMenuClose();
 
-    localStorage.removeItem('token');
+    localStorage.removeItem('token'); 
 
-    navigate('/login');
+    navigate('/login'); 
   };
 
   const SubscriptionItem = ({ icon, label, value }: any) => {
@@ -350,11 +380,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
-      <AppBar
-        position="fixed"
-        sx={{
+      <AppBar 
+        position="fixed" 
+        sx={{ 
           zIndex: 1201,
-          borderRadius: 0
+          borderRadius: 0 
         }}
       >
         <Toolbar>
@@ -520,14 +550,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             icon={<CampaignIcon />}
             label="Campañas & Chatbots"
           />
-          <NavItem
-            to="/panel/api"
-            icon={<ApiIcon />}
+          <NavItem 
+            to="/panel/api" 
+            icon={<ApiIcon />} 
             label="Acceso API" />
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: "hidden" }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, overflowY: "auto" }}>
         <Toolbar />
         <Outlet />
       </Box>
@@ -665,9 +695,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Nombre"
+                name="name"
                 value={userData.name}
+                onChange={handleInputChange}
                 InputProps={{
-                  readOnly: true,
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
                       <DriveFileRenameOutlineIcon fontSize="small" />
@@ -680,9 +711,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Correo electrónico"
+                name="email"
                 value={userData.email}
+                onChange={handleInputChange}
                 InputProps={{
-                  readOnly: true,
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
                       <MailOutlineIcon fontSize="small" />
@@ -695,9 +727,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <TextField
                 fullWidth
                 label="Tu número de móvil"
+                name="mobile"
                 value={userData.mobile}
+                onChange={handleInputChange}
                 InputProps={{
-                  readOnly: true,
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
                       <WhatsAppIcon fontSize="small" />
@@ -712,6 +745,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 label="Contraseña"
                 type="password"
                 variant="outlined"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 InputProps={{
                   startAdornment: (
                     <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
@@ -732,6 +767,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <Button
             variant="contained"
             fullWidth
+            onClick={handleProfileUpdate}
             sx={{
               backgroundColor: 'primary.main',
               "&:hover": {
