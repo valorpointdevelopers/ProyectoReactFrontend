@@ -1,6 +1,6 @@
 import * as React from "react";
-import config from '../config.json';
-   import { useNavigate } from 'react-router-dom';
+import config from '../../config.json';
+import { useNavigate } from 'react-router-dom';
 
 import {
   Box,
@@ -28,7 +28,7 @@ type LoginForm = {
 };
 
 const validateEmail = (value: string) =>
-  /^(?:[a-zA-Z0-9_'^&/+{}!#$%*?|~.-]+)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(value);
+  /^(?:[a-zA-Z0-9_\'^&/+{}!#$%*?|~.-]+)@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(value);
 
 export default function Login() {
   const [values, setValues] = React.useState<LoginForm>({
@@ -36,7 +36,7 @@ export default function Login() {
     password: "",
     remember: true,
   });
-     const navigate = useNavigate();
+  const navigate = useNavigate();
   
   const [showPassword, setShowPassword] = React.useState(false);
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({});
@@ -56,7 +56,7 @@ export default function Login() {
     else if (!validateEmail(values.email)) next.email = "Correo inválido";
 
     if (!values.password) next.password = "Ingresa tu contraseña";
-    else if (values.password.length <3) next.password = "Mínimo 6 caracteres";
+    else if (values.password.length < 6) next.password = "Mínimo 6 caracteres";
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -69,43 +69,29 @@ export default function Login() {
     if (!validate()) return;
 
     setSubmitting(true);
- e.preventDefault();
     try {
-      const response = await fetch(config.API_URL+'user/login', {
+      const response = await fetch(config.API_URL + 'user/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
       });
 
       const data = await response.json();
-      console.log(data);
-      setAlert(data.msg);
       if (data.success) {
-          localStorage.setItem("token", data.token);
-           navigate('/panel/dashboard');
-         
-      }
-      else{
-        setAlert(data.msg);
+        setAlert({ type: "success", msg: "¡Bienvenido! Autenticación exitosa." });
+        localStorage.setItem("token", data.token);
+        navigate('/panel/dashboard');
+      } else {
+        setAlert({ type: "error", msg: data.msg || "Ocurrió un error. Inténtalo de nuevo." });
       }
     } catch (error) {
       console.error(error);
-      setAlert({ type: "error", msg: "Error al registrar el usuario" });
-    }
-
-
-
-
-
-    try {
-      await new Promise((res) => setTimeout(res, 1000));
-      setAlert({ type: "success", msg: "¡Bienvenido! Autenticación exitosa." });
-    } catch (err) {
-      setAlert({ type: "error", msg: "Ocurrió un error. Inténtalo de nuevo." });
+      setAlert({ type: "error", msg: "Email o contraseña incorrectos. Inténtalo de nuevo." });
     } finally {
       setSubmitting(false);
     }
   };
+
 
   return (
     <Grid
@@ -120,7 +106,6 @@ export default function Login() {
       spacing={2}
       flexDirection={{ xs: "column", md: "row" }}
     >
-      {/* Imagen al costado */}
       <Grid item>
         <Box
           component="img"
@@ -136,13 +121,11 @@ export default function Login() {
         />
       </Grid>
 
-      {/* Login */}
       <Grid item>
         <Paper
           elevation={8}
           sx={{ p: { xs: 3, sm: 4 }, borderRadius: 4, backdropFilter: "blur(3px)" }}
         >
-          {/* Nuevo botón de regreso - Eliminado de aquí */}
           <Box textAlign="center" mb={2}>
             <Typography variant="h4" fontWeight={700} gutterBottom>
               Inicia sesión
@@ -206,7 +189,6 @@ export default function Login() {
                 label="Recordarme"
               />
               
-              {/* Enlace de recuperación de contraseña */}
               <Link
                 component={RouterLink}
                 to="/recuperar-contrasena"
@@ -229,7 +211,6 @@ export default function Login() {
               {submitting ? "Ingresando..." : "Entrar"}
             </Button>
 
-            {/* Nuevo botón de regreso - Movido aquí */}
             <Box mt={2}>
               <Button
                 component={RouterLink}

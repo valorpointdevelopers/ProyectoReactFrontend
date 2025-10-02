@@ -1,4 +1,5 @@
-import * as React from "react";
+import React, { useState, useEffect } from "react";
+import config from "../config";
 import {
   Box,
   Button,
@@ -32,11 +33,10 @@ import ImageIcon from '@mui/icons-material/Image';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import DescriptionIcon from '@mui/icons-material/Description';
-
-// Importa la imagen del token
 import TokenImage from "../images/token.png";
+import { data } from "framer-motion/client";
 
-// Funciones de accesibilidad para las pestañas
+
 function a11yProps(index: number) {
   return {
     id: `api-tab-${index}`,
@@ -44,7 +44,6 @@ function a11yProps(index: number) {
   };
 }
 
-// Este componente simula la generación de un token API
 const generateToken = () => {
   const token = Math.random().toString(36).substring(2) +
     Math.random().toString(36).substring(2) +
@@ -52,13 +51,41 @@ const generateToken = () => {
   return token;
 };
 
-// Componente para la sección de "Generar token"
 const GenerateTokenSection = () => {
   const [token, setToken] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
+
+  const [apitoken, setApitoken] = useState({
+   token: ''
+  });
+
+
+  useEffect(() => {
+    const fetchToken = async () => {
+          try {
+            const response = await fetch(config.API_URL+"/user/get_me", {
+                      method: "GET",
+                      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token'),},
+                    }); 
+      
+            const { data } =  await response.json();
+            console.log(data);
+
+            setApitoken({
+              token: data.token || ''
+            })
+      
+          } catch (error) {
+            console.log(error);
+          }
+          
+        };
+          fetchToken();
+  }, []);
+  
 
   const handleGenerateToken = () => {
     setLoading(true);
@@ -70,7 +97,7 @@ const GenerateTokenSection = () => {
   };
 
   const handleCopyToken = () => {
-    navigator.clipboard.writeText(token);
+    navigator.clipboard.writeText(apitoken.token);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -115,7 +142,7 @@ const GenerateTokenSection = () => {
           </Typography>
           <TextField
             fullWidth
-            value={token}
+            defaultValue={apitoken.token}
             variant="outlined"
             InputProps={{
               readOnly: true,
@@ -499,7 +526,7 @@ const Api = () => {
       backgroundColor: isDarkMode ? theme.palette.background.default : '#f5f7fa',
       color: theme.palette.text.primary,
     }}>
-      {/* Sidebar para pantallas grandes */}
+
       <Paper elevation={1} sx={{
         width: 280,
         flexShrink: 0,
@@ -565,7 +592,6 @@ const Api = () => {
         </List>
       </Paper>
 
-      {/* Menú de pestañas para móviles */}
       <Box sx={{
         display: { xs: 'block', md: 'none' },
         width: '100%',
@@ -598,7 +624,6 @@ const Api = () => {
         </Tabs>
       </Box>
 
-      {/* Contenido principal */}
       <Box sx={{ flexGrow: 1, p: { xs: 2, md: 4 }, overflowY: 'auto' }}>
         <Grid container spacing={4} justifyContent="center" alignItems="flex-start">
           <Grid item xs={12} md={10}>
