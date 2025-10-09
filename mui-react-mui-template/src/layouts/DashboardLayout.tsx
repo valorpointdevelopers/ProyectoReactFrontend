@@ -45,11 +45,12 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import SyncLockIcon from '@mui/icons-material/SyncLock';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import { LocalFireDepartment, Whatshot } from "@mui/icons-material";
 
 interface DashboardLayoutProps {
   onToggleTheme?: () => void;
@@ -557,7 +558,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           />
           <NavItem
             to="calentador"
-            icon={<ChatIcon />}
+            icon={<LocalFireDepartment />}
             label="Calentador de WhatsApp"
           />
           <NavItem
@@ -582,7 +583,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, overflowY: "auto" }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
         <Outlet />
       </Box>
