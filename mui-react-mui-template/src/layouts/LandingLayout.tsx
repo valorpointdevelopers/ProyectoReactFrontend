@@ -76,7 +76,7 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
       {onToggleTheme && (
         <Box sx={{ mt: 2 }}>
            <IconButton onClick={onToggleTheme} sx={{ p: 1.5, backgroundColor: theme.palette.action.hover, borderRadius: 2 }}>
-              {isLight ? <DarkModeIcon htmlColor="#000"/> : <LightModeIcon htmlColor="#fff"/>}
+             {isLight ? <DarkModeIcon htmlColor="#000"/> : <LightModeIcon htmlColor="#fff"/>}
            </IconButton>
         </Box>
       )}
@@ -84,7 +84,15 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
   );
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <Box 
+      sx={{ 
+        display: "flex", 
+        flexDirection: "column", 
+        minHeight: "100vh",
+        // ✅ Deshabilita el desplazamiento en el contenedor principal
+        overflow: 'hidden', 
+      }}
+    >
       <AppBar
         position="sticky"
         elevation={0}
@@ -144,13 +152,12 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
               >
                 Panel
               </Button>
-               <IconButton
+                <IconButton
                 color="inherit"
                 aria-label="open drawer"
                 edge="end"
                 onClick={handleDrawerToggle}
               >
-                {/* AQUÍ ESTÁ LA CORRECCIÓN */}
                 <MenuIcon sx={{ color: 'text.primary' }} />
               </IconButton>
             </Box>
@@ -172,7 +179,12 @@ export default function LandingLayout({ children, onToggleTheme, mode = "light" 
         {drawerContent}
       </Drawer>
 
-      <Box sx={{ py: { xs: 6, md: 10 }, flexGrow: 1, overflowY: "auto" }}>
+      <Box 
+        sx={{ 
+          py: { xs: 6, md: 10 }, 
+          flexGrow: 1, 
+        }}
+      >
         {children}
       </Box>
 
