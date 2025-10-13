@@ -86,8 +86,8 @@ const mapBlockTypeToServer = (t: string | undefined) => {
   const s = String(t).toLowerCase();
   if (s.includes("texto") || s.includes("text")) return "text";
   if (s.includes("imagen") || s.includes("image")) return "image";
-  if (s.includes("documento") || s.includes("document")) return "document";
-  if (s.includes("audio")) return "audio";
+  if (s.includes("documento") || s.includes("document")) return "doc";
+  if (s.includes("audio")) return "aud";
   if (s.includes("video")) return "video";
   if (s.includes("ubic") || s.includes("location")) return "location";
   if (s.includes("encuesta") || s.includes("poll")) return "poll";
@@ -263,6 +263,7 @@ const FlowBuilder: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const [uploadedFileOriginalName, setUploadedFileOriginalName] = useState<string | null>(null);
+const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
   // Refs
   const nextId = useRef(1);
@@ -291,7 +292,6 @@ const FlowBuilder: React.FC = () => {
     }
   }, [forAll, dialogOption]);
 
-  // --- Lógica de validación--
   const isFormValid = useMemo(() => {
     if (!dialogOption) return false;
 
@@ -423,11 +423,7 @@ const FlowBuilder: React.FC = () => {
     setOptionPortRects(optMap);
   };
 
-  useLayoutEffect(() => {
-    computeRects();
-    const t = window.setTimeout(() => computeRects(), 60);
-    return () => clearTimeout(t);
-  }, [blocks, zoom, mainView]);
+
 
   useEffect(() => {
     const handleResize = () => computeRects();
@@ -483,7 +479,7 @@ const FlowBuilder: React.FC = () => {
     }
   };
 
- const handleLoadFlow = async (flowId: string, flowTitle: string) => {
+const handleLoadFlow = async (flowId: string, flowTitle: string) => {
     try {
         const data = await apiService.getFlowById(flowId);
         const nodes = Array.isArray(data.nodes) ? data.nodes : [];
@@ -494,43 +490,47 @@ const FlowBuilder: React.FC = () => {
             type: normalizeType(n.nodeType),
             x: n.position?.x ?? BLOCK_BASE_X,
             y: n.position?.y ?? BLOCK_BASE_Y,
-            data: {
-                ...n.data?.state,
-                keywords: n.data?.state?.options || [],
-                forAll: (n.data?.state?.options || []).includes("{{OTHER_MSG}}"),
-            },
+            data: { ...n.data?.state, keywords: n.keyword || n.data?.state?.options || [] },
         }));
 
         const mappedConns: Connection[] = edges
             .map((e: any) => {
                 if (!e.source || !e.target) return null;
-
                 const sourceNode = mappedBlocks.find(b => String(b.id) === String(e.source));
                 if (!sourceNode) return null;
-                
-                const options = sourceNode.data?.keywords || sourceNode.data?.options || [];
-                const portIndex = options.indexOf(e.sourceHandle);
-                
-                // Si encontramos el índice, creamos el ID del puerto. Si no, usamos un default.
-                const fromPort = portIndex !== -1 ? `opt-${portIndex}` : e.sourceHandle || "opt-0";
-
+                const options = sourceNode.data?.keywords || [];
+                const portIndex = options.findIndex((opt: string) => opt === e.sourceHandle);
+                if (portIndex === -1) return null;
                 return { 
                     from: String(e.source), 
                     to: String(e.target), 
-                    fromPort: fromPort
+                    fromPort: `opt-${portIndex}`
                 };
             })
             .filter(Boolean) as Connection[];
 
-        setBlocks(mappedBlocks);
-        setConnections(mappedConns);
         setTitle(flowTitle);
         setCurrentFlowId(flowId);
+        setConnections(mappedConns);
+        
+        setBlocks(mappedBlocks);
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => computeRects());
+        });
+
         setFlowsDrawer(false);
         setMainView("canvas");
     } catch (err: any) {
         console.error("Error cargando flujo:", err);
         window.alert(err.message || "No se pudo cargar el flujo");
+    }
+};
+
+const handleLocationClick = (lat?: string, lng?: string) => {
+    if (lat && lng) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        window.open(url, "_blank");
     }
 };
   const randomString = (length: number) => {
@@ -548,55 +548,86 @@ const handleSaveFlowToServer = async () => {
 
         const mappedNodes = blocks.map((b) => {
             const stateData = { ...b.data };
+            const nodeServerType = mapBlockTypeToServer(b.type);
 
-            // --- Modificaciones existentes ---
-            if (typeof stateData.forAll !== 'undefined') {
-                delete stateData.forAll;
+            let msgContent: any = {};
+            
+            switch (nodeServerType) {
+                case 'text':
+                    msgContent = { text: stateData.text || '' };
+                    break;
+                case 'image':
+                    msgContent = {
+                        image: {
+                            url: stateData.filename || '', 
+                            caption: stateData.legend || ''
+                        }
+                    };
+                    break;
+               case 'doc':
+    msgContent = {
+        document: {
+            url: stateData.filename || '',
+        },
+        caption: stateData.legend || '',
+        fileName: stateData.originalName || '' 
+    };
+    break;
+                case 'video':
+                     msgContent = {
+                        video: {
+                            url: stateData.filename || '',
+                            caption: stateData.legend || ''
+                        }
+                    };
+                    break;
+                case 'aud':
+                    msgContent = {
+                        audio: {
+                            url: stateData.filename || ''
+                        },
+                          fileName: stateData.originalName || ''
+                    };
+                    break;
+                case 'location':
+                    msgContent = {
+                        location: {
+                            degreesLatitude: stateData.lat || '',
+                            degreesLongitude: stateData.lng || ''
+                        }
+                    };
+                    break;
+                default:
+                    msgContent = {};
+                    break;
             }
-            if (stateData.keywords) {
-                stateData.options = stateData.keywords;
-                delete stateData.keywords;
-            }
-
-            if (b.type === "Imagen" || b.type === "Video" || b.type === "Audio" || b.type === "Documento") {
-                if (stateData.url && typeof stateData.url === 'string') {
-                    const filename = stateData.url.split('/').pop();
-                    stateData.file = filename;
-                    delete stateData.url;
-                    delete stateData.originalName;
-                }
-            }
-
-            const backendDataStructure = {
-                data: "data",
-                source: false,
-                state: stateData,
-            };
 
             return {
                 id: b.id,
                 type: "CustomNode",
-                nodeType: mapBlockTypeToServer(b.type),
+                nodeType: nodeServerType,
                 position: { x: b.x, y: b.y },
-                data: backendDataStructure,
+                data: {
+                    data: "data",
+                    source: false,
+                    state: stateData, 
+                },
                 width: BLOCK_WIDTH,
                 height: 214,
                 dragging: false,
                 selected: false,
                 positionAbsolute: { x: b.x, y: b.y },
-                keyword: stateData.options || [],
-                msgContent: { text: stateData.text || '' },
+                keyword: stateData.keywords || [],
+                msgContent: msgContent,
             };
         });
-
+        
         const mappedEdges = connections.map((c) => {
             const sourceBlock = blocks.find(b => b.id === c.from);
             if (!sourceBlock) return null;
-
             const options = (sourceBlock.data?.keywords || sourceBlock.data?.options || []);
             const portIndex = parseInt(c.fromPort.split('-')[1], 10);
             const sourceHandleValue = options[portIndex] || c.fromPort;
-
             return {
                 source: c.from,
                 target: c.to,
@@ -613,18 +644,18 @@ const handleSaveFlowToServer = async () => {
             edges: mappedEdges,
             flowId,
         };
-
+        
         await apiService.addFlow(payload);
 
         window.alert("Flujo guardado en servidor correctamente");
         setCurrentFlowId(flowId);
         await loadFlows();
+
     } catch (err: any) {
         console.error("Error guardando flujo:", err);
         window.alert(err.message || "No se pudo guardar el flujo");
     }
 };
-
   const handleDeleteFlow = async (flowId: string | undefined) => {
     if (!flowId) return;
     if (!window.confirm("¿Estás seguro de que quieres eliminar este flujo?")) return;
@@ -677,6 +708,7 @@ const handleSaveFlowToServer = async () => {
     setLegend("");
     setUploadedFileUrl(null);
     setUploadedFileOriginalName(null);
+setUploadedFileName(null);
   };
 
   const openEditDialog = (block: Block) => {
@@ -694,6 +726,7 @@ const handleSaveFlowToServer = async () => {
     setSurveyOptions(Array.isArray(block.data?.options) && block.data.options.length > 0 ? [...block.data.options] : ["", ""]);
     setUploadedFileUrl(block.data?.url ?? null);
     setUploadedFileOriginalName(block.data?.originalName ?? null);
+setUploadedFileName(block.data?.filename ?? null);
   };
 
   const closeDialog = () => {
@@ -728,6 +761,7 @@ const handleSaveFlowToServer = async () => {
       if (data.success) {
         setUploadedFileUrl(data.url);
         setUploadedFileOriginalName(data.originalName);
+       setUploadedFileName(data.filename);
       } else {
         throw new Error(data.msg || "Error al subir el archivo.");
       }
@@ -779,11 +813,13 @@ const handleSaveFlowToServer = async () => {
       case "Documento":
         data.url = uploadedFileUrl;
         data.originalName = uploadedFileOriginalName;
+data.filename = uploadedFileName; 
         data.legend = legend;
         break;
       case "Audio":
         data.url = uploadedFileUrl;
         data.originalName = uploadedFileOriginalName;
+data.filename = uploadedFileName;
         break;
       case "Ubicación":
         data.lat = lat;
@@ -798,8 +834,14 @@ const handleSaveFlowToServer = async () => {
     }
 
     if (editingBlockId) {
-      setBlocks((prev) => prev.map((b) => (b.id === editingBlockId ? { ...b, type: dialogOption, data } : b)));
-    } else {
+    setBlocks((prev) =>
+        prev.map((b) =>
+            b.id === editingBlockId
+                ? { ...b, type: dialogOption, data: { ...b.data, ...data } }
+                : b
+        )
+    );
+} else {
       setBlocks((prev) => [...prev, { id, type: dialogOption, x: BLOCK_BASE_X, y: BLOCK_BASE_Y + prev.length * BLOCK_SPACING_Y, data }]);
     }
 
@@ -955,7 +997,7 @@ const handleSaveFlowToServer = async () => {
                 </svg>
 
                 {blocks.map((b) => {
-                  const outputPorts = b.data?.keywords || b.data?.options || [];
+          const outputPorts = b.data?.options || b.data?.keywords || [];
                   return (
                     <Draggable
                       key={b.id}
@@ -992,32 +1034,88 @@ const handleSaveFlowToServer = async () => {
                           </Stack>
                         </Box>
 
-                        <Box sx={{ px: 2, py: 1.25, bgcolor: "background.paper", position: "relative", minHeight: 40 }}>
-                          {b.type === "Texto" && <Typography variant="body2" noWrap title={b.data?.text}>{String(b.data?.text ?? "").slice(0, 120) || "Sin texto"}</Typography>}
-                          {(b.type === "Imagen" || b.type === "Video" || b.type === "Documento" || b.type === "Audio") && <Typography variant="body2" noWrap title={b.data?.originalName}>Archivo: {b.data?.originalName || "No seleccionado"}</Typography>}
-                          {b.type === "Ubicación" && <Typography variant="body2" noWrap>Lat: {b.data?.lat || "-"}, Lng: {b.data?.lng || "-"}</Typography>}
-                          {b.type === "Encuesta" && <Typography variant="body2" noWrap title={b.data?.question}>Pregunta: {b.data?.question || "Sin pregunta"}</Typography>}
+<Box sx={{ px: 2, py: 1.25, bgcolor: "background.paper", position: "relative", minHeight: 40 }}>
+    
 
-                          <Stack spacing={0.5} sx={{ mt: 1 }}>
-                            {outputPorts.map((k: string, i: number) => {
-                              const portId = `opt-${i}`;
-                              return (
-                                <Box key={portId} sx={{ position: "relative" }}>
-                                  <Button variant="outlined" size="small" fullWidth sx={{ justifyContent: "flex-start", textTransform: "none" }}>
-                                    {k}
-                                  </Button>
-                                  <Box ref={registerOptionRef(b.id, portId)} sx={{ position: "absolute", right: -10, top: "50%", transform: "translateY(-50%)" }}>
-                                    <Tooltip title="Conectar desde esta opción" arrow>
-                                      <IconButton size="small" onClick={() => startConnectionFromOption(b.id, portId)} sx={{ color: blockColors[b.type] }}>
-                                        <FiberManualRecordIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </Box>
-                                </Box>
-                              );
-                            })}
-                          </Stack>
-                        </Box>
+    {b.type === "Texto" && (
+        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '120px', overflowY: 'auto' }} title={b.data?.text}>
+            {String(b.data?.text ?? "").slice(0, 150) || "Sin texto"}
+        </Typography>
+    )}
+
+    {b.type === "Imagen" && b.data?.url && (
+        <Box
+            component="img"
+            src={b.data.url}
+            alt="Vista previa"
+            sx={{ width: '100%', maxHeight: 150, objectFit: 'contain', borderRadius: 1, my: 1 }}
+        />
+    )}
+    
+    {b.type === "Video" && b.data?.url && (
+        <Box sx={{ my: 1, '& video': { width: '100%', borderRadius: 1, maxHeight: 150, backgroundColor: '#000' } }}>
+            <video src={b.data.url} controls muted loop playsInline />
+        </Box>
+    )}
+
+    {b.type === "Audio" && b.data?.url && (
+        <Box sx={{ my: 1 }}>
+            <audio src={b.data.url} controls style={{ width: '100%' }} />
+        </Box>
+    )}
+    
+    {b.type === "Documento" && (
+        <Paper variant="outlined" sx={{ p: 1, my: 1, display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'grey.100' }}>
+            <DescriptionOutlinedIcon color="action" />
+            <Typography variant="body2" noWrap sx={{ flex: 1 }} title={b.data?.originalName}>
+                {b.data?.originalName || "Archivo no seleccionado"}
+            </Typography>
+        </Paper>
+    )}
+    
+    {b.type === "Ubicación" && (
+        <Tooltip title="Abrir en Google Maps">
+            <Paper 
+                variant="outlined" 
+                onClick={() => handleLocationClick(b.data?.lat, b.data?.lng)}
+                sx={{ p: 1, my: 1, display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', '&:hover': { bgcolor: 'grey.100' } }}
+            >
+                <LocationOnIcon color="action" />
+                <Typography variant="body2" noWrap>
+                    Lat: {b.data?.lat || "-"}, Lng: {b.data?.lng || "-"}
+                </Typography>
+            </Paper>
+        </Tooltip>
+    )}
+
+    {b.type === "Encuesta" && (
+        <Typography variant="body2" noWrap sx={{ my: 1 }} title={b.data?.question}>
+            Pregunta: {b.data?.question || "Sin pregunta"}
+        </Typography>
+    )}
+
+
+
+    <Stack spacing={0.5} sx={{ mt: 1 }}>
+        {outputPorts.map((k: string, i: number) => {
+            const portId = `opt-${i}`;
+            return (
+                <Box key={portId} sx={{ position: "relative" }}>
+                    <Button variant="outlined" size="small" fullWidth sx={{ justifyContent: "flex-start", textTransform: "none" }}>
+                        {k}
+                    </Button>
+                    <Box ref={registerOptionRef(b.id, portId)} sx={{ position: "absolute", right: -10, top: "50%", transform: "translateY(-50%)" }}>
+                        <Tooltip title="Conectar desde esta opción" arrow>
+                            <IconButton size="small" onClick={() => startConnectionFromOption(b.id, portId)} sx={{ color: blockColors[b.type] }}>
+                                <FiberManualRecordIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
+                </Box>
+            );
+        })}
+    </Stack>
+</Box>
 
                         <Box ref={registerInputRef(b.id)} sx={{ position: "absolute", left: -10, top: "50%", transform: "translateY(-50%)", zIndex: 5 }}>
                           <Tooltip title="Aceptar conexión" arrow>
@@ -1085,6 +1183,7 @@ const handleSaveFlowToServer = async () => {
                 userSelect: "none",
               }}
             >
+
               {blocks.map((b) => (
                 <Box
                   key={`map-${b.id}`}
