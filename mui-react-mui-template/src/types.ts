@@ -5,10 +5,11 @@ export interface Chat {
   lastMessage: string;
   timestamp: string;
   phoneNumber: string;
-  dbChatId: string; 
+  dbChatId: number;
   unreadCount?: number; 
   profilePicUrl?: string; 
-  chatStatus?: string;
+  chatStatus?: 'open' | 'solved' | 'pending';
+  chat_note?: string;
 }
 
 export interface Message {

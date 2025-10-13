@@ -16,6 +16,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ArticleIcon from '@mui/icons-material/Article';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import NoteAltIcon from '@mui/icons-material/NoteAlt';
 import { io, Socket } from "socket.io-client";
 
 import welcomeCats from "../images/no-chat-found.svg";
@@ -28,6 +29,63 @@ import lightModeBackground from '../images/LightMode.png';
 import darkModeBackground from '../images/DarkMode.jpg';
 
 // ======================= SUB-COMPONENTES ==========================
+
+const ChatNoteModal: React.FC<{
+    open: boolean;
+    note: string;
+    onClose: () => void;
+    onSave: (note: string) => void;
+}> = ({ open, note, onClose, onSave }) => {
+    const [currentNote, setCurrentNote] = useState(note);
+
+    useEffect(() => {
+        if (open) {
+            setCurrentNote(note);
+        }
+    }, [note, open]);
+
+    const handleSave = () => {
+        onSave(currentNote);
+        onClose();
+    };
+
+    const handleDelete = () => {
+        onSave('');
+        onClose();
+    };
+
+    const style = { position: 'absolute' as 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', border: '2px solid #000', boxShadow: 24, p: 4, borderRadius: 2 };
+
+    return (
+        <Modal open={open} onClose={onClose}>
+            <Box sx={style}>
+                <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
+                    Nota del Chat
+                </Typography>
+                <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    variant="outlined"
+                    label="Escribe tu nota aquí..."
+                    value={currentNote}
+                    onChange={(e) => setCurrentNote(e.target.value)}
+                />
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
+                    <Button variant="outlined" color="error" onClick={handleDelete} disabled={!note}>
+                        Eliminar
+                    </Button>
+                    <Box>
+                        <Button onClick={onClose} sx={{ mr: 1 }}>Cancelar</Button>
+                        <Button variant="contained" onClick={handleSave}>
+                            Guardar Nota
+                        </Button>
+                    </Box>
+                </Box>
+            </Box>
+        </Modal>
+    );
+};
 
 const StatusChip: React.FC<{ status?: string }> = ({ status }) => {
     if (!status) return null;
@@ -99,7 +157,12 @@ const MessageStatus: React.FC<{ status?: Message['status']; }> = ({ status }) =>
     return null;
 };
 
-const ChatActions: React.FC<{ onDeleteChat: () => void; onUpdateStatus: (status: 'open' | 'solved' | 'pending') => void; onGetSenderDetails: () => void; }> = ({ onDeleteChat, onUpdateStatus, onGetSenderDetails }) => {
+const ChatActions: React.FC<{ 
+    onDeleteChat: () => void; 
+    onUpdateStatus: (status: 'open' | 'solved' | 'pending') => void; 
+    onGetSenderDetails: () => void;
+    onOpenNoteModal: () => void;
+}> = ({ onDeleteChat, onUpdateStatus, onGetSenderDetails, onOpenNoteModal }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [statusMenuAnchorEl, setStatusMenuAnchorEl] = useState<null | HTMLElement>(null);
     const isMainMenuOpen = Boolean(anchorEl);
@@ -123,6 +186,7 @@ const ChatActions: React.FC<{ onDeleteChat: () => void; onUpdateStatus: (status:
             <Menu anchorEl={anchorEl} open={isMainMenuOpen} onClose={handleMainMenuClose}>
                 <MenuItem onClick={() => { onGetSenderDetails(); handleMainMenuClose(); }}>Ver Detalles del Contacto</MenuItem>
                 <MenuItem onClick={handleStatusMenuClick}>Cambiar Estado</MenuItem>
+                <MenuItem onClick={() => { onOpenNoteModal(); handleMainMenuClose(); }}>Dejar Nota del chat</MenuItem>
                 <MenuItem onClick={() => { onDeleteChat(); handleMainMenuClose(); }} sx={{ color: 'error.main' }}>Eliminar Chat</MenuItem>
             </Menu>
             <Menu anchorEl={statusMenuAnchorEl} open={isStatusMenuOpen} onClose={handleStatusMenuClose}>
@@ -271,8 +335,19 @@ const MessageBubble: React.FC<{ msg: Message }> = ({ msg }) => {
     );
 };
 
-const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: boolean; typingInfo: { jid: string, isTyping: boolean } | null; onSendMessage: (text: string) => void; onSendMedia: (file: File) => void; onDeleteChat: () => void; onUpdateStatus: (status: 'open' | 'solved' | 'pending') => void; onGetSenderDetails: () => void; }> = (props) => {
-    const { chat, messages, onSendMessage, isLoading, typingInfo, onSendMedia, onDeleteChat, onUpdateStatus, onGetSenderDetails } = props;
+const ConversationView: React.FC<{ 
+    chat: Chat; 
+    messages: Message[]; 
+    isLoading?: boolean; 
+    typingInfo: { jid: string, isTyping: boolean } | null; 
+    onSendMessage: (text: string) => void; 
+    onSendMedia: (file: File) => void; 
+    onDeleteChat: () => void; 
+    onUpdateStatus: (status: 'open' | 'solved' | 'pending') => void; 
+    onGetSenderDetails: () => void;
+    onOpenNoteModal: () => void;
+}> = (props) => {
+    const { chat, messages, onSendMessage, isLoading, typingInfo, onSendMedia, onDeleteChat, onUpdateStatus, onGetSenderDetails, onOpenNoteModal } = props;
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
     const scrollContainerRef = useRef<null | HTMLDivElement>(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
@@ -308,7 +383,23 @@ const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: 
                         </Typography>
                     </Box>
                     <StatusChip status={chat.chatStatus} />
-                    <ChatActions onDeleteChat={onDeleteChat} onUpdateStatus={onUpdateStatus} onGetSenderDetails={onGetSenderDetails} />
+                    {chat.chat_note && chat.chat_note.trim() !== '' && (
+                         <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<NoteAltIcon />}
+                            onClick={onOpenNoteModal}
+                            sx={{ mr: 1, textTransform: 'none' }}
+                        >
+                            Ver Nota
+                        </Button>
+                    )}
+                    <ChatActions 
+                        onDeleteChat={onDeleteChat} 
+                        onUpdateStatus={onUpdateStatus} 
+                        onGetSenderDetails={onGetSenderDetails}
+                        onOpenNoteModal={onOpenNoteModal}
+                    />
                 </Toolbar>
             </AppBar>
 
@@ -359,7 +450,6 @@ const ConversationView: React.FC<{ chat: Chat; messages: Message[]; isLoading?: 
     );
 };
 
-
 // ======================= COMPONENTE PRINCIPAL ==========================
 const BandejadeEntrada: React.FC = () => {
     const theme = useTheme();
@@ -376,6 +466,7 @@ const BandejadeEntrada: React.FC = () => {
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
     const [contactDetails, setContactDetails] = useState<{ name: string; status?: string; profilePhoto?: string; } | null>(null);
     const [pastedImage, setPastedImage] = useState<File | null>(null);
+    const [noteModalOpen, setNoteModalOpen] = useState(false);
 
     const selectedChatRef = useRef<Chat | null>(null);
     const socketRef = useRef<Socket | null>(null);
@@ -437,45 +528,22 @@ const BandejadeEntrada: React.FC = () => {
         if (['image', 'video', 'doc', 'aud', 'doc_cap'].includes(messageType)) {
             const mediaType = messageType === 'doc_cap' ? 'doc' : messageType;
             let mimetype = msg.msgContext?.mimetype;
-            if (mediaType === 'image' && !mimetype) {
-                mimetype = 'image/jpeg';
-            }
-            
-            return {
-                msgId: msg.msgId, chatId: jid, fromMe: msg.route === 'outgoing',
-                timestamp: msg.timestamp, type: mediaType, status: msg.status,
-                media: { 
-                    url: `${baseURL}/media/${msg.msgContext?.fileName}`, 
-                    fileName: msg.msgContext?.fileName, 
-                    mimetype: mimetype,
-                    caption: msg.msgContext?.caption || '' 
-                }
-            };
+            if (mediaType === 'image' && !mimetype) { mimetype = 'image/jpeg'; }
+            return { msgId: msg.msgId, chatId: jid, fromMe: msg.route === 'outgoing', timestamp: msg.timestamp, type: mediaType, status: msg.status, media: { url: `${baseURL}/media/${msg.msgContext?.fileName}`, fileName: msg.msgContext?.fileName, mimetype: mimetype, caption: msg.msgContext?.caption || '' } };
         }
-        return {
-            msgId: msg.msgId, chatId: jid, fromMe: msg.route === 'outgoing',
-            text: msg.msgContext?.text || '', timestamp: msg.timestamp,
-            type: 'text', status: msg.status
-        };
+        return { msgId: msg.msgId, chatId: jid, fromMe: msg.route === 'outgoing', text: msg.msgContext?.text || '', timestamp: msg.timestamp, type: 'text', status: msg.status };
     };
 
     const formatLastMessagePreview = (message: Message): string => {
         const prefix = message.fromMe ? "Tú: " : "";
-    
-        if (message.media?.caption) {
-            return `${prefix}${message.media.caption}`;
-        }
-        if (message.text) {
-            return `${prefix}${message.text}`;
-        }
+        if (message.media?.caption) { return `${prefix}${message.media.caption}`; }
+        if (message.text) { return `${prefix}${message.text}`; }
         if (message.media) {
             switch (message.type) {
                 case 'image': return `${prefix}📷 Imagen`;
                 case 'video': return `${prefix}📹 Video`;
-                case 'audio':
-                case 'aud': return `${prefix}🎵 Audio`;
-                case 'doc':
-                case 'doc_cap': return `${prefix}📄 Documento`;
+                case 'audio': case 'aud': return `${prefix}🎵 Audio`;
+                case 'doc': case 'doc_cap': return `${prefix}📄 Documento`;
                 default: return `${prefix}📎 Archivo`;
             }
         }
@@ -489,99 +557,27 @@ const BandejadeEntrada: React.FC = () => {
             socketRef.current = socket;
             const userId = localStorage.getItem('uid');
 
-            socket.on('connect', () => {
-                console.log('🔌 Conectado al servidor de Sockets.');
-                setConnectionStatus('open'); 
-                if (userId) socket.emit('user_connected', { userId });
-            });
-            
-            socket.on('whatsapp-status', ({ status }: { status: string }) => { 
-                setConnectionStatus(status); 
-            });
-            
+            socket.on('connect', () => { console.log('🔌 Conectado al servidor de Sockets.'); setConnectionStatus('open'); if (userId) socket.emit('user_connected', { userId }); });
+            socket.on('whatsapp-status', ({ status }: { status: string }) => { setConnectionStatus(status); });
             socket.on('push_new_msg', (data: any) => {
                 if (!data || !data.msg || !data.msg.remoteJid) { return; }
                 const newMessageRaw = data.msg;
                 const chatId = newMessageRaw.remoteJid;
                 const messageData = transformBackendMessage(newMessageRaw, chatId);
-
                 if (!messageData.fromMe && (selectedChatRef.current?.jid !== messageData.chatId || document.hidden)) {
                     notificationAudio.current.play().catch(error => console.error("Error al reproducir sonido:", error));
                 }
-
                 if (selectedChatRef.current?.jid === messageData.chatId) {
-                    setMessages(prev => {
-                        if (messageData.fromMe) {
-                            const tempMessage = [...prev].reverse().find(m => m.status === 'pending');
-                            if (tempMessage) {
-                                db.messages.delete(tempMessage.msgId);
-                                db.messages.put(messageData);
-                                return prev.map(m => m.msgId === tempMessage.msgId ? messageData : m);
-                            }
-                        }
-                        if (prev.some(msg => msg.msgId === messageData.msgId)) { return prev; }
-                        db.messages.put(messageData);
-                        return [...prev, messageData];
-                    });
-                } else {
-                     db.messages.put(messageData);
-                     db.chats.where({ jid: messageData.chatId }).modify(chat => { chat.unreadCount = (chat.unreadCount || 0) + 1; });
-                }
-
-                setChats(prev => {
-                    const chatIndex = prev.findIndex(c => c.jid === messageData.chatId);
-                    let newChats = [...prev];
-                    const newTimestamp = new Date(messageData.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const lastMessageText = formatLastMessagePreview(messageData);
-
-                    if (chatIndex > -1) {
-                        const existingChat = newChats[chatIndex];
-                        const isChatOpen = selectedChatRef.current?.jid === messageData.chatId;
-                        const updatedChat = { ...existingChat, lastMessage: lastMessageText, timestamp: newTimestamp, unreadCount: isChatOpen ? existingChat.unreadCount : (existingChat.unreadCount || 0) + 1 };
-                        newChats.splice(chatIndex, 1);
-                        newChats.unshift(updatedChat);
-                    } else {
-                        const newChat: Chat = { id: messageData.chatId, jid: messageData.chatId, name: newMessageRaw.senderName || messageData.chatId.split('@')[0], lastMessage: lastMessageText, timestamp: newTimestamp, phoneNumber: messageData.chatId.split('@')[0], dbChatId: data.chatId, unreadCount: 1, chatStatus: 'open' };
-                        newChats.unshift(newChat);
-                        db.chats.put(newChat);
-                    }
-                    return newChats;
-                });
+                    setMessages(prev => { if (messageData.fromMe) { const tempMessage = [...prev].reverse().find(m => m.status === 'pending'); if (tempMessage) { db.messages.delete(tempMessage.msgId); db.messages.put(messageData); return prev.map(m => m.msgId === tempMessage.msgId ? messageData : m); } } if (prev.some(msg => msg.msgId === messageData.msgId)) { return prev; } db.messages.put(messageData); return [...prev, messageData]; });
+                } else { db.messages.put(messageData); db.chats.where({ jid: messageData.chatId }).modify(chat => { chat.unreadCount = (chat.unreadCount || 0) + 1; }); }
+                setChats(prev => { const chatIndex = prev.findIndex(c => c.jid === messageData.chatId); let newChats = [...prev]; const newTimestamp = new Date(messageData.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); const lastMessageText = formatLastMessagePreview(messageData); if (chatIndex > -1) { const existingChat = newChats[chatIndex]; const isChatOpen = selectedChatRef.current?.jid === messageData.chatId; const updatedChat = { ...existingChat, lastMessage: lastMessageText, timestamp: newTimestamp, unreadCount: isChatOpen ? existingChat.unreadCount : (existingChat.unreadCount || 0) + 1 }; newChats.splice(chatIndex, 1); newChats.unshift(updatedChat); } else { const newChat: Chat = { id: messageData.chatId, jid: messageData.chatId, name: newMessageRaw.senderName || messageData.chatId.split('@')[0], lastMessage: lastMessageText, timestamp: newTimestamp, phoneNumber: messageData.chatId.split('@')[0], dbChatId: data.chatId, unreadCount: 1, chatStatus: 'open', chat_note: '' }; newChats.unshift(newChat); db.chats.put(newChat); } return newChats; });
             });
-
-            socket.on('msg-status-updated', (updates: { id: string, jid: string, status: number }[]) => {
-                for (const update of updates) {
-                    const statusMap: { [key: number]: Message['status'] } = { 3: 'delivered', 4: 'read' };
-                    const newStatus = statusMap[update.status] || 'sent';
-                    db.messages.update(update.id, { status: newStatus });
-                    if (selectedChatRef.current?.jid === update.jid) {
-                        setMessages(prev => prev.map(m => m.msgId === update.id ? { ...m, status: newStatus } : m));
-                    }
-                }
-            });
-
-            socket.on('presence-update', (data: { jid: string, presence: string }) => {
-                const { jid, presence } = data;
-                if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-                if (presence === 'composing') {
-                    setTypingInfo({ jid, isTyping: true });
-                    typingTimeoutRef.current = window.setTimeout(() => setTypingInfo({ jid, isTyping: false }), 3000);
-                } else {
-                    setTypingInfo({ jid, isTyping: false });
-                }
-            });
-            
-            socket.on('disconnect', () => {
-                console.log('🔌 Desconectado del servidor de Sockets.');
-                setConnectionStatus('close');
-            });
+            socket.on('msg-status-updated', (updates: { id: string, jid: string, status: number }[]) => { for (const update of updates) { const statusMap: { [key: number]: Message['status'] } = { 3: 'delivered', 4: 'read' }; const newStatus = statusMap[update.status] || 'sent'; db.messages.update(update.id, { status: newStatus }); if (selectedChatRef.current?.jid === update.jid) { setMessages(prev => prev.map(m => m.msgId === update.id ? { ...m, status: newStatus } : m)); } } });
+            socket.on('presence-update', (data: { jid: string, presence: string }) => { const { jid, presence } = data; if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current); if (presence === 'composing') { setTypingInfo({ jid, isTyping: true }); typingTimeoutRef.current = window.setTimeout(() => setTypingInfo({ jid, isTyping: false }), 3000); } else { setTypingInfo({ jid, isTyping: false }); } });
+            socket.on('disconnect', () => { console.log('🔌 Desconectado del servidor de Sockets.'); setConnectionStatus('close'); });
         };
-
         if (!socketRef.current) setupSockets();
-        return () => {
-            if (socketRef.current?.connected) socketRef.current.disconnect();
-            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        };
+        return () => { if (socketRef.current?.connected) socketRef.current.disconnect(); if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current); };
     }, []);
 
     const fetchChats = async () => {
@@ -596,31 +592,10 @@ const BandejadeEntrada: React.FC = () => {
             if (data.success && Array.isArray(data.data)) {
                 if (data.userData?.selIns) setInstanceId(data.userData.selIns);
                 const serverChats: Chat[] = data.data.map((chat: any) => {
-                    
                     let lastMessageText = 'Chat iniciado';
-                    try {
-                        const parsedRawMessage = JSON.parse(chat.last_message);
-                        const lastMessageObject = transformBackendMessage(parsedRawMessage, chat.sender_jid);
-                        lastMessageText = formatLastMessagePreview(lastMessageObject);
-                    } catch (e) {
-                        if (typeof chat.last_message === 'string' && chat.last_message.trim() !== '') {
-                            lastMessageText = chat.last_message;
-                        }
-                    }
-
+                    try { const parsedRawMessage = JSON.parse(chat.last_message); const lastMessageObject = transformBackendMessage(parsedRawMessage, chat.sender_jid); lastMessageText = formatLastMessagePreview(lastMessageObject); } catch (e) { if (typeof chat.last_message === 'string' && chat.last_message.trim() !== '') { lastMessageText = chat.last_message; } }
                     const cachedVersion = cachedChats.find(c => c.jid === chat.sender_jid);
-                    return { 
-                        id: chat.id.toString(), 
-                        jid: chat.sender_jid, 
-                        name: chat.sender_name, 
-                        lastMessage: lastMessageText, 
-                        timestamp: chat.last_message_came ? new Date(chat.last_message_came).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', 
-                        phoneNumber: chat.sender_mobile, 
-                        dbChatId: chat.chat_id, 
-                        unreadCount: cachedVersion?.unreadCount || 0, 
-                        profilePicUrl: cachedVersion?.profilePicUrl, 
-                        chatStatus: chat.chat_status || 'open' 
-                    };
+                    return { id: chat.id.toString(), jid: chat.sender_jid, name: chat.sender_name, lastMessage: lastMessageText, timestamp: chat.last_message_came ? new Date(chat.last_message_came).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', phoneNumber: chat.sender_mobile, dbChatId: chat.chat_id, unreadCount: cachedVersion?.unreadCount || 0, profilePicUrl: cachedVersion?.profilePicUrl, chatStatus: chat.chat_status || 'open', chat_note: chat.chat_note || '' };
                 });
                 await db.chats.bulkPut(serverChats);
                 setChats(serverChats);
@@ -632,176 +607,28 @@ const BandejadeEntrada: React.FC = () => {
 
     const handleSelectChat = async (chat: Chat) => {
         if (selectedChat?.id === chat.id) return;
-        if (chat.unreadCount && chat.unreadCount > 0) {
-            await db.chats.update(chat.jid, { unreadCount: 0 });
-            setChats(prev => prev.map(c => c.jid === chat.jid ? { ...c, unreadCount: 0 } : c));
-        }
+        if (chat.unreadCount && chat.unreadCount > 0) { await db.chats.update(chat.jid, { unreadCount: 0 }); setChats(prev => prev.map(c => c.jid === chat.jid ? { ...c, unreadCount: 0 } : c)); }
         setSelectedChat({ ...chat, unreadCount: 0 });
         setIsLoadingMessages(true);
-        try {
-            const cachedMessages = await db.messages.where('chatId').equals(chat.jid).toArray();
-            setMessages(cachedMessages.sort((a, b) => a.timestamp - b.timestamp));
-            const response = await fetch(`${config.API_URL}inbox/get_convo?id=${chat.jid}`, { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
-            const data = await response.json();
-            if (data.success && Array.isArray(data.data)) {
-                const transformedMessages: Message[] = data.data.map((msg: any) => transformBackendMessage(msg, chat.jid));
-                await db.messages.bulkPut(transformedMessages);
-                setMessages(transformedMessages.sort((a, b) => a.timestamp - b.timestamp));
-            }
-        } catch (err) { console.error("Error cargando conversación:", err); } 
-        finally { setIsLoadingMessages(false); }
+        try { const cachedMessages = await db.messages.where('chatId').equals(chat.jid).toArray(); setMessages(cachedMessages.sort((a, b) => a.timestamp - b.timestamp)); const response = await fetch(`${config.API_URL}inbox/get_convo?id=${chat.jid}`, { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } }); const data = await response.json(); if (data.success && Array.isArray(data.data)) { const transformedMessages: Message[] = data.data.map((msg: any) => transformBackendMessage(msg, chat.jid)); await db.messages.bulkPut(transformedMessages); setMessages(transformedMessages.sort((a, b) => a.timestamp - b.timestamp)); } } catch (err) { console.error("Error cargando conversación:", err); } finally { setIsLoadingMessages(false); }
     };
     
-    const handleSendMessage = async (text: string) => {
-        if (!selectedChat || !instanceId) return;
-        try {
-            const response = await fetch(`${config.API_URL}inbox/send_text`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
-                body: JSON.stringify({ text, toJid: selectedChat.jid, toName: selectedChat.name, chatId: selectedChat.jid, instance: instanceId })
-            });
-            if (!response.ok) { throw new Error(`El servidor respondió con el estado ${response.status}`); }
-            const data = await response.json();
-            if (!data.success) { throw new Error(data.msg || "El backend indicó un error al enviar el mensaje."); }
-        } catch (err: any) {
-            console.error("Error al enviar mensaje:", err);
-            alert(`No se pudo enviar el mensaje: ${err.message}`);
-        }
-    };
-    
-    const apiCall = async (path: string, body: object, method: string = 'POST') => { 
-        try { 
-            const response = await fetch(`${config.API_URL}${path}`, { 
-                method, 
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }, 
-                body: JSON.stringify(body) 
-            }); 
-            
-            const responseText = await response.text();
-            let data;
-            try {
-                data = JSON.parse(responseText);
-            } catch (e) {
-                console.error("Respuesta inválida del servidor:", responseText);
-                throw new Error("Respuesta inválida del servidor.");
-            }
-
-            if (!response.ok) throw new Error(data.msg || `HTTP error! status: ${response.status}`); 
-            if (data.success === false) throw new Error(data.msg || 'Error en la API'); 
-            
-            return data; 
-        } catch (error) { 
-            console.error(`Error en la llamada a ${path}:`, error); 
-            throw error; 
-        } 
-    };
-
-    const handleSendMedia = async (file: File, caption: string = '') => {
-        if (!selectedChat || !instanceId) {
-            alert('Selecciona un chat y asegúrate que la instancia esté disponible.');
-            return;
-        }
-        
-        const tempId = `temp_${Date.now()}`;
-        let mediaType: Message['type'] = 'doc';
-        if (file.type.startsWith('image/')) mediaType = 'image';
-        if (file.type.startsWith('video/')) mediaType = 'video';
-        if (file.type.startsWith('audio/')) mediaType = 'audio';
-        
-        const optimisticMessage: Message = {
-            msgId: tempId, 
-            chatId: selectedChat.jid, 
-            fromMe: true, 
-            timestamp: Math.floor(Date.now() / 1000),
-            type: mediaType, 
-            status: 'pending', 
-            media: { 
-                url: URL.createObjectURL(file), 
-                mimetype: file.type, 
-                fileName: file.name,
-                caption: caption
-            }
-        };
-
-        setMessages(prev => [...prev, optimisticMessage]);
-        await db.messages.put(optimisticMessage);
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const uploadResponse = await fetch(`${config.API_URL}user/return_url`, { 
-                method: 'POST', 
-                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }, 
-                body: formData 
-            });
-            
-            const uploadData = await uploadResponse.json();
-            if (!uploadData.success) throw new Error(uploadData.msg || 'Error al subir el archivo.');
-            
-            let payload: any = { 
-                toJid: selectedChat.jid, 
-                toName: selectedChat.name, 
-                chatId: selectedChat.jid, 
-                instance: instanceId, 
-                caption: caption 
-            };
-
-            if (mediaType === 'image') {
-                payload.image = uploadData.filename;
-                payload.fileName = uploadData.originalName;
-            } else {
-                payload.fileName = uploadData.filename;
-                payload.originalFile = uploadData.originalName;
-            }
-            
-            const endpointType = mediaType === 'audio' ? 'aud' : mediaType;
-            await apiCall(`inbox/send_${endpointType}`, payload);
-
-        } catch (error: any) {
-            console.error("Fallo al enviar media:", error);
-            alert(`No se pudo enviar el archivo: ${error.message}`);
-            await db.messages.update(tempId, { status: 'error' });
-            setMessages(prev => prev.map(m => m.msgId === tempId ? { ...m, status: 'error' } : m));
-        }
-    };
-
+    const handleSendMessage = async (text: string) => { if (!selectedChat || !instanceId) return; try { const response = await fetch(`${config.API_URL}inbox/send_text`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: JSON.stringify({ text, toJid: selectedChat.jid, toName: selectedChat.name, chatId: selectedChat.jid, instance: instanceId }) }); if (!response.ok) { throw new Error(`El servidor respondió con el estado ${response.status}`); } const data = await response.json(); if (!data.success) { throw new Error(data.msg || "El backend indicó un error al enviar el mensaje."); } } catch (err: any) { console.error("Error al enviar mensaje:", err); alert(`No se pudo enviar el mensaje: ${err.message}`); } };
+    const apiCall = async (path: string, body: object, method: string = 'POST') => { try { const response = await fetch(`${config.API_URL}${path}`, { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: JSON.stringify(body) }); const responseText = await response.text(); let data; try { data = JSON.parse(responseText); } catch (e) { console.error("Respuesta inválida del servidor:", responseText); throw new Error("Respuesta inválida del servidor."); } if (!response.ok) throw new Error(data.msg || `HTTP error! status: ${response.status}`); if (data.success === false) throw new Error(data.msg || 'Error en la API'); return data; } catch (error) { console.error(`Error en la llamada a ${path}:`, error); throw error; } };
+    const handleSendMedia = async (file: File, caption: string = '') => { if (!selectedChat || !instanceId) { alert('Selecciona un chat y asegúrate que la instancia esté disponible.'); return; } const tempId = `temp_${Date.now()}`; let mediaType: Message['type'] = 'doc'; if (file.type.startsWith('image/')) mediaType = 'image'; if (file.type.startsWith('video/')) mediaType = 'video'; if (file.type.startsWith('audio/')) mediaType = 'audio'; const optimisticMessage: Message = { msgId: tempId, chatId: selectedChat.jid, fromMe: true, timestamp: Math.floor(Date.now() / 1000), type: mediaType, status: 'pending', media: { url: URL.createObjectURL(file), mimetype: file.type, fileName: file.name, caption: caption } }; setMessages(prev => [...prev, optimisticMessage]); await db.messages.put(optimisticMessage); const formData = new FormData(); formData.append('file', file); try { const uploadResponse = await fetch(`${config.API_URL}user/return_url`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }, body: formData }); const uploadData = await uploadResponse.json(); if (!uploadData.success) throw new Error(uploadData.msg || 'Error al subir el archivo.'); let payload: any = { toJid: selectedChat.jid, toName: selectedChat.name, chatId: selectedChat.jid, instance: instanceId, caption: caption }; if (mediaType === 'image') { payload.image = uploadData.filename; payload.fileName = uploadData.originalName; } else { payload.fileName = uploadData.filename; payload.originalFile = uploadData.originalName; } const endpointType = mediaType === 'audio' ? 'aud' : mediaType; await apiCall(`inbox/send_${endpointType}`, payload); } catch (error: any) { console.error("Fallo al enviar media:", error); alert(`No se pudo enviar el archivo: ${error.message}`); await db.messages.update(tempId, { status: 'error' }); setMessages(prev => prev.map(m => m.msgId === tempId ? { ...m, status: 'error' } : m)); } };
     const handleDeleteChat = () => { if (!selectedChat) return; setDeleteModalOpen(true); };
     const confirmDeleteChat = async () => { if (!selectedChat) return; await apiCall('inbox/del_chat', { chatId: selectedChat.dbChatId }); await db.messages.where('chatId').equals(selectedChat.jid).delete(); await db.chats.delete(selectedChat.jid); setChats(prev => prev.filter(c => c.jid !== selectedChat.jid)); setSelectedChat(null); setDeleteModalOpen(false); };
+    const handleUpdateChatStatus = async (newStatus: 'open' | 'solved' | 'pending') => { if (!selectedChat) return; const originalStatus = selectedChat.chatStatus; const updatedChat = { ...selectedChat, chatStatus: newStatus }; setSelectedChat(updatedChat); setChats(prevChats => prevChats.map(c => c.id === selectedChat.id ? updatedChat : c)); await db.chats.update(selectedChat.jid, { chatStatus: newStatus }); try { await apiCall('user/change_chat_ticket_status', { chatId: selectedChat.dbChatId, status: newStatus }); } catch (error) { console.error("Fallo al actualizar el estado en el servidor:", error); const revertedChat = { ...selectedChat, chatStatus: originalStatus }; setSelectedChat(revertedChat); setChats(prevChats => prevChats.map(c => c.id === selectedChat.id ? revertedChat : c)); await db.chats.update(selectedChat.jid, { chatStatus: originalStatus }); alert("No se pudo actualizar el estado del chat. Por favor, inténtalo de nuevo."); } };
+    const handleGetSenderDetails = async () => { if (!selectedChat || !instanceId) return; const data = await apiCall('inbox/get_sender_details', { sessionId: instanceId, jid: selectedChat.jid }); if (data) { const details = { name: selectedChat.name, status: data.status?.status, profilePhoto: data.profilePhoto }; setContactDetails(details); setDetailsModalOpen(true); if (data.profilePhoto) { const profilePicUrl = data.profilePhoto; setChats(prev => prev.map(c => c.jid === selectedChat.jid ? { ...c, profilePicUrl } : c)); setSelectedChat(prev => prev ? { ...prev, profilePicUrl } : null); await db.chats.update(selectedChat.jid, { profilePicUrl }); } } };
     
-    const handleUpdateChatStatus = async (newStatus: 'open' | 'solved' | 'pending') => {
+    const handleSaveNote = async (newNote: string) => {
         if (!selectedChat) return;
-        const originalStatus = selectedChat.chatStatus;
-        const updatedChat = { ...selectedChat, chatStatus: newStatus };
+        const originalNote = selectedChat.chat_note;
+        const updatedChat = { ...selectedChat, chat_note: newNote };
         setSelectedChat(updatedChat);
         setChats(prevChats => prevChats.map(c => c.id === selectedChat.id ? updatedChat : c));
-        await db.chats.update(selectedChat.jid, { chatStatus: newStatus });
-        try {
-            await apiCall('user/change_chat_ticket_status', { chatId: selectedChat.dbChatId, status: newStatus });
-        } catch (error) {
-            console.error("Fallo al actualizar el estado en el servidor:", error);
-            const revertedChat = { ...selectedChat, chatStatus: originalStatus };
-            setSelectedChat(revertedChat);
-            setChats(prevChats => prevChats.map(c => c.id === selectedChat.id ? revertedChat : c));
-            await db.chats.update(selectedChat.jid, { chatStatus: originalStatus });
-            alert("No se pudo actualizar el estado del chat. Por favor, inténtalo de nuevo.");
-        }
-    };
-    
-    const handleGetSenderDetails = async () => {
-        if (!selectedChat || !instanceId) return;
-        const data = await apiCall('inbox/get_sender_details', { sessionId: instanceId, jid: selectedChat.jid });
-        if (data) {
-            const details = { name: selectedChat.name, status: data.status?.status, profilePhoto: data.profilePhoto };
-            setContactDetails(details);
-            setDetailsModalOpen(true);
-            if (data.profilePhoto) {
-                const profilePicUrl = data.profilePhoto;
-                setChats(prev => prev.map(c => c.jid === selectedChat.jid ? { ...c, profilePicUrl } : c));
-                setSelectedChat(prev => prev ? { ...prev, profilePicUrl } : null);
-                await db.chats.update(selectedChat.jid, { profilePicUrl });
-            }
-        }
+        await db.chats.update(selectedChat.jid, { chat_note: newNote });
+        try { await apiCall('inbox/update_chat_note', { chatId: selectedChat.dbChatId, note: newNote }); } catch (error) { console.error("Fallo al guardar la nota en el servidor:", error); alert("No se pudo guardar la nota."); const revertedChat = { ...selectedChat, chat_note: originalNote }; setSelectedChat(revertedChat); setChats(prevChats => prevChats.map(c => c.id === selectedChat.id ? revertedChat : c)); await db.chats.update(selectedChat.jid, { chat_note: originalNote }); }
     };
 
     return (
@@ -817,6 +644,13 @@ const BandejadeEntrada: React.FC = () => {
                     await handleSendMedia(file, caption);
                     setPastedImage(null);
                 }}
+            />
+            
+            <ChatNoteModal 
+                open={noteModalOpen}
+                onClose={() => setNoteModalOpen(false)}
+                note={selectedChat?.chat_note || ''}
+                onSave={handleSaveNote}
             />
 
             <Paper elevation={1} sx={{ width: { xs: "100%", sm: "400px" }, p: 2, borderRight: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', display: "flex", flexDirection: "column", height: "100%", boxSizing: 'border-box' }}>
@@ -851,6 +685,7 @@ const BandejadeEntrada: React.FC = () => {
                         onSendMessage={handleSendMessage} onSendMedia={(file) => handleSendMedia(file)}
                         onDeleteChat={handleDeleteChat} onUpdateStatus={handleUpdateChatStatus}
                         onGetSenderDetails={handleGetSenderDetails}
+                        onOpenNoteModal={() => setNoteModalOpen(true)}
                     /> :
                     <Box flex={1} display="flex" justifyContent="center" alignItems="center" flexDirection="column" sx={{textAlign: 'center', p: 2}}>
                         <img src={welcomeCats} alt="Welcome" style={{ width: "250px", marginBottom: "16px" }} />
