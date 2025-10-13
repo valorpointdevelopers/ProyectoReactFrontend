@@ -28,8 +28,9 @@ interface Message {
 }
 
 interface Instance {
-    id: string;
+    id: string; // Este campo contendrá el string codificado en Base64
     name: string;
+    phoneNumber: string; 
 }
 
 
@@ -37,19 +38,28 @@ type ActiveTab = "script" | "config";
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 
+// FUNCIÓN AUXILIAR PARA CODIFICAR A BASE64
+const encodeInstanceToBase64 = (instanceData: any): string => {
+    const jsonString = JSON.stringify(instanceData);
+    return btoa(jsonString);
+};
+
+
 interface ActivarCalentadorContentProps {
     isWarmerActive: boolean;
     setIsWarmerActive: (active: boolean) => void;
+    fetchMyWarmer: () => Promise<void>; 
 }
 
-const ActivarCalentadorContent: React.FC<ActivarCalentadorContentProps> = ({ isWarmerActive, setIsWarmerActive }) => {
+const ActivarCalentadorContent: React.FC<ActivarCalentadorContentProps> = ({ isWarmerActive, setIsWarmerActive, fetchMyWarmer }) => {
+    // Almacenamos los IDs codificados (Base64) de las instancias seleccionadas
     const [selectedInstances, setSelectedInstances] = useState<string[]>([]);
     const [instances, setInstances] = useState<Instance[]>([]);
 
     const fetchWarmerInstances = async () => {
         try {
             const response = await fetch(config.API_URL + "/session/get_instances_with_status", {
-                method: "GET",
+                method: "GET", 
                 headers: { "Content-Type": "application/json", Authorization: "Bearer " + localStorage.getItem("token") },
             });
             if (response.ok) {
@@ -57,10 +67,22 @@ const ActivarCalentadorContent: React.FC<ActivarCalentadorContentProps> = ({ isW
                 
                 const rawInstances = data.data || data || [];
                 
-                const mappedInstances: Instance[] = rawInstances.map((item: any) => ({
-                    id: item.i?.instance_id || item.i?.id?.toString() || item.i?.uid || generateId(),
-                    name: item.i?.title || item.userData?.name || "Instancia sin nombre",
-                }));
+                const mappedInstances: Instance[] = rawInstances.map((item: any) => {
+                    const client_id = item.i?.title || item.userData?.name || "Instancia sin nombre";
+                    
+                    const instanceDataToEncode = {
+                        uid: item.i?.uid,
+                        client_id: client_id,
+                    };
+
+                    const encodedInstanceId = encodeInstanceToBase64(instanceDataToEncode);
+                    
+                    return {
+                        id: encodedInstanceId, 
+                        name: client_id,
+                        phoneNumber: item.userData?.id || item.i?.phone_number || item.userData?.phone_number || "",
+                    };
+                });
 
                 setInstances(mappedInstances);
             } else {
@@ -77,40 +99,95 @@ const ActivarCalentadorContent: React.FC<ActivarCalentadorContentProps> = ({ isW
         fetchWarmerInstances();
     }, []);
 
-    const handleInstanceToggle = (instanceId: string) => {
-        setSelectedInstances(prev =>
-            prev.includes(instanceId)
-                ? prev.filter(id => id !== instanceId)
-                : [...prev, instanceId]
-        );
-    };
-
-    const fetchAddIns = async() => {
+    const fetchAddIns = async(instanceIdBase64: string) => {
+        console.log("Enviando instancia codificada a la API:", instanceIdBase64);
         try {
             const response = await fetch(config.API_URL + "/user/add_ins_to_warm", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json", Authorization: "Bearer " + localStorage.getItem("token")
-                }
+                    "Content-Type": "application/json", 
+                    Authorization: "Bearer " + localStorage.getItem("token")
+                },
+                body: JSON.stringify({ instance: instanceIdBase64 })
             });
+            
+            if (response.ok) {
+                console.log("Operación de calentador completada. Actualizando lista...");
+                await fetchMyWarmer(); 
+            } else {
+                console.error("Error al interactuar con el calentador:", await response.text());
+            }
+
         } catch (error){
-            console.log(error);
+            console.error("Error de red al interactuar con el calentador:", error);
         } 
     }
+    
+    const fetchRemoveIns = async(instanceIdBase64: string) => {
+         console.log("Intentando remover instancia codificada de la API:", instanceIdBase64);
+         // Usamos fetchAddIns asumiendo que el backend hace toggle
+         await fetchAddIns(instanceIdBase64);
+    }
+    
+    const handleInstanceToggle = (instanceId: string) => {
+        setSelectedInstances(prev => {
+            const isCurrentlySelected = prev.includes(instanceId);
+            let newSelectedInstances;
 
-    //const
+            if (isCurrentlySelected) {
+                newSelectedInstances = prev.filter(id => id !== instanceId);
+                fetchRemoveIns(instanceId); 
+            } else {
+                newSelectedInstances = [...prev, instanceId];
+                fetchAddIns(instanceId);
+            }
+            return newSelectedInstances;
+        });
+    };
 
+
+    // *** FUNCIÓN MODIFICADA PARA ENVIAR EL ESTADO AL BACKEND ***
+    const fetchChangeStatus = async(status: boolean) => {
+      try { 
+          const response = await fetch(config.API_URL + "/user/change_status", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json", 
+                Authorization: "Bearer " + localStorage.getItem("token")
+            },
+            // Enviamos el estado (true/false) en el cuerpo
+            body: JSON.stringify({ status: status }) 
+          });
+          
+          if (response.ok) {
+              console.log(`Estado del calentador actualizado a: ${status}`);
+          } else {
+              console.error("Error al cambiar el estado del calentador:", await response.text());
+          }
+
+      } catch(error){
+        console.error("Error de red al cambiar el estado del calentador:", error);
+      }
+    }
+
+    // *** MODIFICACIÓN CLAVE EN handleWarmerToggle ***
     const handleWarmerToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newActiveState = event.target.checked;
+        
+        // 1. Verificación de requisito
         if (newActiveState && selectedInstances.length < 2) {
             alert("Seleccione al menos 2 instancias para activar el calentador");
+            // No cambiamos el estado local si la validación falla
             return;
         }
+        
+        // 2. Cambiamos el estado local
         setIsWarmerActive(newActiveState);
+        
+        // 3. Llamamos a la API con el nuevo estado
+        fetchChangeStatus(newActiveState);
+        
         console.log(`Calentador cambiado a: ${newActiveState ? 'Activo' : 'APAGADO'}`);
-        if (newActiveState) {
-            console.log("Instancias seleccionadas para calentar:", selectedInstances);
-        }
     };
 
 
@@ -164,7 +241,16 @@ const ActivarCalentadorContent: React.FC<ActivarCalentadorContentProps> = ({ isW
                                     />
                                 </TableCell>
                                 <TableCell component="th" scope="row">
-                                    {instance.name}
+                                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                        <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                                            {instance.name.split(':')[0].trim()}
+                                        </Typography>
+                                        {instance.phoneNumber && (
+                                            <Typography variant="body2" color="text.secondary">
+                                                {instance.phoneNumber.split(':')[0].trim()}
+                                            </Typography>
+                                        )}
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -178,12 +264,12 @@ const ActivarCalentadorContent: React.FC<ActivarCalentadorContentProps> = ({ isW
                         <Switch
                             checked={isWarmerActive}
                             onChange={handleWarmerToggle}
-                            color={isWarmerActive ? "error" : "success"}
+                            color={isWarmerActive ? "success" : "error"}
                         />
                     }
                     label={
-                        <Typography variant="button" sx={{ fontWeight: 'bold', color: isWarmerActive ? 'error.main' : 'success.main' }}>
-                            {isWarmerActive ? 'Desactivar Calentador' : 'Activar Calentador'}
+                        <Typography variant="button" sx={{ fontWeight: 'bold', color: isWarmerActive ? 'success.main' : 'error.main' }}>
+                            {isWarmerActive ? 'ENCENDIDO' : 'APAGADO'}
                         </Typography>
                     }
                     labelPlacement="start" 
@@ -193,6 +279,8 @@ const ActivarCalentadorContent: React.FC<ActivarCalentadorContentProps> = ({ isW
     );
 }
 
+// ----------------------------------------------------------------------------------
+
     const fetchMyWarmer = async () => {
         try {
             const response = await fetch(config.API_URL + "/user/get_my_warmer", {
@@ -201,17 +289,16 @@ const ActivarCalentadorContent: React.FC<ActivarCalentadorContentProps> = ({ isW
             });
 
             const data = await response.json();
-            console.log(data);
+            console.log("fetchMyWarmer ejecutado:", data);
 
         } catch (error){
-            console.log(error);
+            console.log("Error en fetchMyWarmer:", error);
         }
     }; 
 
-    fetchMyWarmer();
-
     
 export const CalentadorWhatsapp = () => {
+    
     const [messages, setMessages] = useState<Message[]>([]);
     const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
     const [newMessageText, setNewMessageText] = useState<string>(""); 
@@ -303,6 +390,7 @@ export const CalentadorWhatsapp = () => {
                     <ActivarCalentadorContent
                         isWarmerActive={isWarmerActive}
                         setIsWarmerActive={setIsWarmerActive}
+                        fetchMyWarmer={fetchMyWarmer} 
                     />
                 </>
             );
@@ -370,7 +458,7 @@ export const CalentadorWhatsapp = () => {
                             placeholder={`Mensaje ${index + 1}`}
                             InputProps={{
                                 endAdornment: (
-                                        null
+                                            null
                                 ),
                             }}
                         />
