@@ -20,6 +20,8 @@ import Api from "./pages/Api";
 import ConstructorFlujo from "./pages/ConstructorFlujos";
 import InstancesPage from "./pages/InstancesPage"
 import AccountPage from "./pages/AccountPage";
+import PaySubscription from "./pages/PaySubscription";
+
 
 function App() {
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -54,7 +56,6 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Routes>
-        {/* Landing pública */}
         <Route
           path="/"
           element={
@@ -64,12 +65,10 @@ function App() {
           }
         />
 
-        {/* Login */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
         
-        {/* Panel administrativo con layout */}
         <Route
           path="/panel/*"
           element={<DashboardLayout onToggleTheme={toggleMode} mode={mode} />}
@@ -84,6 +83,8 @@ function App() {
           <Route path="flows" element={<ConstructorFlujo />} />
           <Route path="instances" element={<InstancesPage />} />
           <Route path="account" element={<AccountPage />} />
+          <Route path="pago" element={<PaySubscription/>} />
+        
         </Route>
       </Routes>
     </ThemeProvider>

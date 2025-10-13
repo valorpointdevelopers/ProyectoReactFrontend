@@ -42,12 +42,9 @@ import PanToolIcon from '@mui/icons-material/PanTool';
 import SearchIcon from '@mui/icons-material/Search';
 import MenuIcon from '@mui/icons-material/Menu';
 
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import ContactMailIcon from '@mui/icons-material/ContactMail';
-import ComputerIcon from '@mui/icons-material/Computer';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import SendIcon from '@mui/icons-material/Send';
-import Template from '@mui/icons-material/Inventory';
+
+import { AccountBox, AccountTree, CollectionsBookmark, ContactPhone, Contacts, ContactsOutlined, ContactsSharp, Forum, Message, PeopleAlt, PermContactCalendar, SettingsInputAntenna, ShapeLine, SmartToy } from "@mui/icons-material";
+import {Podcast} from "lucide-react";
 
 
 ChartJS.register(
@@ -374,7 +371,7 @@ const PanelControl: React.FC = () => {
             <KpiCard 
                 title="Total de chats" 
                 value={dashboardData?.totalChats || 0} 
-                icon={ChatBubbleOutlineIcon} 
+                icon={Message} 
                 color={theme.palette.success.main} 
             />
         </Grid>
@@ -382,7 +379,7 @@ const PanelControl: React.FC = () => {
             <KpiCard 
                 title="Total de contactos" 
                 value={dashboardData?.totalContacts || 0} 
-                icon={ContactMailIcon} 
+                icon={Contacts} 
                 color={theme.palette.info.main} 
             />
         </Grid>
@@ -390,7 +387,7 @@ const PanelControl: React.FC = () => {
             <KpiCard 
                 title="Total de chatbots" 
                 value={dashboardData?.totalChatbots || 0} 
-                icon={ComputerIcon} 
+                icon={SmartToy} 
                 color={theme.palette.warning.main} 
             />
         </Grid>
@@ -398,7 +395,7 @@ const PanelControl: React.FC = () => {
             <KpiCard 
                 title="Total de flujos" 
                 value={dashboardData?.totalFlows || 0} 
-                icon={TrendingUpIcon} 
+                icon={AccountTree} 
                 color={theme.palette.secondary.main} 
             />
         </Grid>
@@ -406,7 +403,7 @@ const PanelControl: React.FC = () => {
             <KpiCard 
                 title="Total de campañas" 
                 value={dashboardData?.totalBroadcast || 0} 
-                icon={SendIcon} 
+                icon={Podcast} 
                 color={theme.palette.error.main} 
             />
         </Grid>
@@ -414,7 +411,7 @@ const PanelControl: React.FC = () => {
             <KpiCard 
                 title="Total de plantillas" 
                 value={dashboardData?.totalTemplets || 0} 
-                icon={Template} 
+                icon={CollectionsBookmark} 
                 color={theme.palette.primary.main} 
             />
         </Grid>
